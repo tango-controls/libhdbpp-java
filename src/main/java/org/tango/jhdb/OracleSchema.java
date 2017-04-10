@@ -40,8 +40,7 @@ public class OracleSchema extends HdbReader {
 
     try {
 
-      String v = String.format("%.2f",Hdb.LIB_RELEASE);
-      String version =  "Oracle HDB API v" + v + "\n";
+      String version =  "Oracle HDB API v" + Hdb.getVersion() + "\n";
       String host = "Host:" + connection.getDb().getHost() + "\n";
       String service = "Service:" + connection.getDb().getServiceName();
       return version + host + service;

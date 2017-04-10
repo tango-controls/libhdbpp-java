@@ -36,10 +36,18 @@
       </dependency>
 
       <dependency>
-          <groupId>org.tango</groupId>
-          <artifactId>TangORB</artifactId>
-          <version>RELEASE</version>
-          <scope>provided</scope>
+        <groupId>org.tango</groupId>
+        <artifactId>TangORB</artifactId>
+        <version>9.1.2</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>TacoHdb</groupId>
+          <artifactId>TacoHdb</artifactId>
+          <scope>system</scope>
+          <version>1.0</version>
+          <systemPath>${basedir}\contrib\TacoHdb.jar</systemPath>
       </dependency>
 
     </dependencies>

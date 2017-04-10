@@ -199,8 +199,7 @@ public class MySQLSchema extends HdbReader {
 
   public String getInfo() throws HdbFailed {
 
-    String v = String.format("%.2f",Hdb.LIB_RELEASE);
-    String version =  "MySQL HDB++ API v" + v + "\n";
+    String version =  "MySQL HDB++ API v" + Hdb.getVersion() + "\n";
     String url = "URL:" + dbURL;
     return version + url;
 

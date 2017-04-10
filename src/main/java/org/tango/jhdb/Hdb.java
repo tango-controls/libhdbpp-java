@@ -68,9 +68,6 @@ public class Hdb {
    */
   public final static SimpleDateFormat hdbDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
-  /** Verion Number */
-  public final static double LIB_RELEASE = 1.11 ; // Let the space before the ';'
-
   /** Cassandra HDB++ */
   public  static final int HDB_CASSANDRA = 1;
   /** MySQL HDB++ */
@@ -212,6 +209,14 @@ public class Hdb {
 
   }
 
+  public static String getVersion(){
+    Package p = Hdb.class.getPackage();
+
+    //if version is set in MANIFEST.mf
+    if(p.getImplementationVersion() != null) return p.getImplementationVersion();
+
+    return "*.*";
+  }
 
   public static void main(String[] args) {
 

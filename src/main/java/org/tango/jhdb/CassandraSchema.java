@@ -241,8 +241,7 @@ public class CassandraSchema extends HdbReader {
 
   public String getInfo() throws HdbFailed {
 
-    String v = String.format("%.2f",Hdb.LIB_RELEASE);
-    String version =  "Cassandra HDB++ API v" + v + "\n";
+    String version =  "Cassandra HDB++ API v" + Hdb.getVersion() + "\n";
     String url = "Cluster:" + session.getCluster().getClusterName();
     return version + url;
 
