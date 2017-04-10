@@ -111,7 +111,7 @@
     <repositories>
 	    <repository>
 		    <id>bintray-tango-controls</id>
-		    <url>https://api.bintray.com/maven/tango-controls/maven</url>
+		    <url>http://dl.bintray.com/tango-controls/maven</url>
 	    </repository>
         <repository>
             <id>local-contrib</id>
