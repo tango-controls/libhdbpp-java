@@ -38,16 +38,14 @@
       <dependency>
         <groupId>org.tango</groupId>
         <artifactId>TangORB</artifactId>
-        <version>9.1.2</version>
+        <version>9.2.5</version>
         <scope>provided</scope>
       </dependency>
 
       <dependency>
-          <groupId>TacoHdb</groupId>
+          <groupId>fr.esrf.taco</groupId>
           <artifactId>TacoHdb</artifactId>
-          <scope>system</scope>
           <version>1.0</version>
-          <systemPath>${basedir}\contrib\TacoHdb.jar</systemPath>
       </dependency>
 
     </dependencies>
@@ -108,5 +106,17 @@
             <url>https://api.bintray.com/maven/tango-controls/maven/${project.artifactId}/;publish=1</url>
         </repository>
     </distributionManagement>
-	
+
+
+    <repositories>
+	    <repository>
+		    <id>bintray-tango-controls</id>
+		    <url>https://api.bintray.com/maven/tango-controls/maven</url>
+	    </repository>
+        <repository>
+            <id>local-contrib</id>
+            <url>file://${project.basedir}/contrib</url>
+        </repository>
+	</repositories>	
+
 </project>
