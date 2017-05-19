@@ -528,8 +528,7 @@ public class CassandraSchema extends HdbReader {
 
         // Launch asynchronous calls
         boundStatement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-        boundStatement.setFetchSize(Integer.MAX_VALUE);
-        //boundStatement.setFetchSize(3600*24*100);
+        boundStatement.setFetchSize(5000);
         resultSetFutures.add(session.executeAsync(boundStatement));
 
       }
@@ -555,6 +554,7 @@ public class CassandraSchema extends HdbReader {
       try {
 
         for (ResultSet rs : resultSets) {
+          int remainingInPage = rs.getAvailableWithoutFetching();
           for (Row rw : rs) {
 
             HdbData hd = HdbData.createData(sigInfo.type);
@@ -673,7 +673,9 @@ public class CassandraSchema extends HdbReader {
                 wvalue                             // Write value
             );
             ret.add(hd);
-
+            remainingInPage--;
+            if((remainingInPage == 100) && !rs.isFullyFetched())
+              rs.fetchMoreResults();
           }
         }
 
