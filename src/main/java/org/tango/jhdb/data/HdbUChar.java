@@ -127,6 +127,7 @@ public class HdbUChar extends HdbData {
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (short)(value * f);
+    wvalue = (short)(wvalue * f);
   }
   int dataSize() {
     return 1;

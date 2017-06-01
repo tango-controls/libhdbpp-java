@@ -135,6 +135,8 @@ public class HdbUShortArray extends HdbData {
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
       value[i] = (int)(value[i] * f);
+    for(int i=0;i<dataSizeW();i++)
+      wvalue[i] = (int)(wvalue[i] * f);
   }
   int dataSize() {
     if(value==null)

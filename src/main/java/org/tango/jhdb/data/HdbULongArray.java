@@ -135,6 +135,8 @@ public class HdbULongArray extends HdbData {
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
       value[i] = (long)(value[i] * f);
+    for(int i=0;i<dataSizeW();i++)
+      wvalue[i] = (long)(wvalue[i] * f);
   }
   int dataSize() {
     if(value==null)

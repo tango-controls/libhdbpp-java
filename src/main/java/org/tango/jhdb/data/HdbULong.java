@@ -127,6 +127,7 @@ public class HdbULong extends HdbData {
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (long)(value * f);
+    wvalue = (long)(wvalue * f);
   }
   int dataSize() {
     return 1;

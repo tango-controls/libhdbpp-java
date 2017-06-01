@@ -130,6 +130,7 @@ public class HdbDouble extends HdbData {
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (value * f);
+    wvalue = (wvalue * f);
   }
   int dataSize() {
     return 1;

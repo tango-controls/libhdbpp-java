@@ -137,6 +137,8 @@ public class HdbDoubleArray extends HdbData {
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
       value[i] = (value[i] * f);
+    for(int i=0;i<dataSizeW();i++)
+      wvalue[i] = (wvalue[i] * f);
   }
   int dataSize() {
     if(value==null)

@@ -127,6 +127,7 @@ public class HdbByte extends HdbData {
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (byte)(value * f);
+    wvalue = (byte)(wvalue * f);
   }
   int dataSize() {
     return 1;
