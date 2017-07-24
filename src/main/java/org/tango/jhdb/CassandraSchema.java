@@ -486,6 +486,8 @@ public class CassandraSchema extends HdbReader {
                            String start_date,
                            String stop_date) throws HdbFailed {
 
+    String errorStr = null;
+
     if(sigInfo==null)
       throw new HdbFailed("sigInfo input parameters is null");
 
@@ -537,12 +539,14 @@ public class CassandraSchema extends HdbReader {
       ArrayList<ResultSet> resultSets = new ArrayList<ResultSet>();
 
       try {
-        for(ResultSetFuture sf: resultSetFutures)
+        for(ResultSetFuture sf: resultSetFutures) {
           resultSets.add(sf.getUninterruptibly());
+        }
       } catch (NoHostAvailableException e1) {
         throw new HdbFailed("Error (NoHostAvailable): " + e1.getMessage());
       } catch (QueryExecutionException e2) {
-        throw new HdbFailed("Error (QueryExecution): " + e2.getMessage());
+        // We may ignore this to work around tombstones.
+        errorStr = "Error (QueryExecution): " + e2.getMessage();
       } catch (QueryValidationException e3) {
         throw new HdbFailed("Error (QueryValidation): " + e3.getMessage());
       }
@@ -684,6 +688,9 @@ public class CassandraSchema extends HdbReader {
       }
 
     }
+
+    if(ret.size()==0 && errorStr!=null)
+      throw new HdbFailed(errorStr);
 
     return new HdbDataSet(ret);
 

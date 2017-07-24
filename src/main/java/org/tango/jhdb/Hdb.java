@@ -247,8 +247,8 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "09/07/2015 23:00:00", "10/07/2015 01:00:00",
-          "tango://orion.esrf.fr:10000/sr/d-ct/1/current");
+      test(hdb, "25/05/2017 23:00:00", "25/06/2017 01:00:00",
+          "tango://orion.esrf.fr:10000/sr/d-halo/id7/beamcore");
 
       /*
       // Double RW
