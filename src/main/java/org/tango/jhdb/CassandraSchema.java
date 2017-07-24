@@ -540,13 +540,15 @@ public class CassandraSchema extends HdbReader {
 
       try {
         for(ResultSetFuture sf: resultSetFutures) {
-          resultSets.add(sf.getUninterruptibly());
+          try {
+            resultSets.add(sf.getUninterruptibly());
+          } catch (QueryExecutionException e2) {
+            // We may ignore this to work around tombstones.
+            errorStr = "Error (QueryExecution): " + e2.getMessage();
+          }
         }
       } catch (NoHostAvailableException e1) {
         throw new HdbFailed("Error (NoHostAvailable): " + e1.getMessage());
-      } catch (QueryExecutionException e2) {
-        // We may ignore this to work around tombstones.
-        errorStr = "Error (QueryExecution): " + e2.getMessage();
       } catch (QueryValidationException e3) {
         throw new HdbFailed("Error (QueryValidation): " + e3.getMessage());
       }
