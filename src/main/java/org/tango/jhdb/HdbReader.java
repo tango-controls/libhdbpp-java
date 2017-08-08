@@ -355,6 +355,8 @@ public abstract class HdbReader {
 
   }
 
+  public abstract void disconnect();
+
   /**
    * Returns information on this connection.
    */

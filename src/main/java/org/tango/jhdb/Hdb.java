@@ -84,6 +84,7 @@ public class Hdb {
    */
   public Hdb() {
     hdbType = 0;
+    schema = null;
   }
 
   /**
@@ -197,6 +198,15 @@ public class Hdb {
 
   }
 
+
+  /**
+   * Close connection to HDB
+   */
+  public void disconnect() {
+    if(schema!=null)
+      schema.disconnect();
+  }
+
   public static void test(Hdb hdb,String start,String stop,String attName) throws HdbFailed {
 
     System.out.print("\n--------> " + attName + " ");
@@ -247,7 +257,7 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "25/05/2017 23:00:00", "25/06/2017 01:00:00",
+      test(hdb, "24/07/2017 23:00:00", "25/07/2017 01:00:00",
           "tango://orion.esrf.fr:10000/sr/d-halo/id7/beamcore");
 
       /*
@@ -308,7 +318,7 @@ public class Hdb {
       System.out.println("HdbFailed: "+e.getMessage());
     }
 
-    System.exit(0);
+    hdb.disconnect();
 
   }
 

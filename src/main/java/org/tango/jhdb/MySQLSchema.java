@@ -197,6 +197,14 @@ public class MySQLSchema extends HdbReader {
 
   }
 
+  public void disconnect () {
+    try {
+      connection.close();
+    } catch (SQLException e) {
+      System.out.println("Warning closing connection : " + e.getMessage());
+    }
+  }
+
   public String getInfo() throws HdbFailed {
 
     String version =  "MySQL HDB++ API v" + Hdb.getVersion() + "\n";

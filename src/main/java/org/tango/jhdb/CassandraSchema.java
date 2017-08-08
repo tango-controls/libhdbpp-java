@@ -50,6 +50,7 @@ public class CassandraSchema extends HdbReader {
   public static final String[] DEFAULT_CONTACT_POINTS = {"hdbr1","hdbr2","hdbr3"};
 
   private Session session;
+  private Cluster cluster;
 
   private final static String[] tableNames = {
 
@@ -163,7 +164,6 @@ public class CassandraSchema extends HdbReader {
     //  Build cluster from contact points
     try {
 
-      Cluster cluster;
       Cluster.Builder builder;
 
       if(user.equalsIgnoreCase("anonymous"))
@@ -190,6 +190,11 @@ public class CassandraSchema extends HdbReader {
     for(int i=0;i<prepQueries.length;i++)
       prepQueries[i] = null;
 
+  }
+
+  public void disconnect() {
+    session.close();
+    cluster.close();
   }
 
   private PreparedStatement getPreparedQuery(int type,boolean fullPeriod) throws HdbFailed {

@@ -11,6 +11,7 @@ import tacoHdb.config.HdbSignal;
 import tacoHdb.extract.sig.*;
 
 import javax.management.Attribute;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -33,6 +34,18 @@ public class OracleSchema extends HdbReader {
       throw new HdbFailed(buildMessage(e));
     }
     browser = new HdbBrowser();
+
+  }
+
+  public void disconnect () {
+
+    try {
+      connection.getDb().close();
+    } catch (SQLException e) {
+      System.out.println("Warning closing connection : " + e.getMessage());
+    } catch (HdbException e) {
+      System.out.println("Warning closing connection : " + buildMessage(e));
+    }
 
   }
 
