@@ -37,16 +37,15 @@
 
       <dependency>
         <groupId>org.tango</groupId>
-        <artifactId>TangORB</artifactId>
-        <version>9.2.5</version>
+        <artifactId>JTango</artifactId>
+        <version>RELEASE</version>
         <scope>provided</scope>
       </dependency>
 
       <dependency>
           <groupId>fr.esrf.taco</groupId>
           <artifactId>TacoHdb</artifactId>
-          <version>1.0</version>
-          <scope>provided</scope>
+          <version>3.1</version>
       </dependency>
 
     </dependencies>

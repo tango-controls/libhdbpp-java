@@ -3,10 +3,7 @@ package org.tango.jhdb;
 import fr.esrf.Tango.DevFailed;
 import fr.esrf.TangoApi.*;
 import org.tango.jhdb.data.*;
-import tacoHdb.common.HdbBrowser;
-import tacoHdb.common.HdbConnection;
-import tacoHdb.common.HdbConst;
-import tacoHdb.common.HdbException;
+import tacoHdb.common.*;
 import tacoHdb.config.HdbSignal;
 import tacoHdb.extract.sig.*;
 
@@ -21,19 +18,28 @@ import java.util.Vector;
 
 public class OracleSchema extends HdbReader {
 
-  HdbConnection connection;
+  IDbConnection connection;
   HdbBrowser browser;
 
-  public OracleSchema() throws HdbFailed {
+  public OracleSchema(int type) throws HdbFailed {
+
+    if( type==Hdb.HDB_ORACLE ) {
+      connection = HdbConnection.getInstance();
+    } else if ( type==Hdb.HDB_ORACLE_ARCH ) {
+      connection = ArchConnection.getInstance();
+    } else if ( type==Hdb.HDB_ORACLE_OLD_ARCH ) {
+      connection = OldarchConnection.getInstance();
+    } else {
+      throw new HdbFailed("Wrong Oracle type");
+    }
 
     // Connect to oracle HDB
-    connection = HdbConnection.getInstance();
     try {
       connection.connect();
     } catch( HdbException e ) {
       throw new HdbFailed(buildMessage(e));
     }
-    browser = new HdbBrowser();
+    browser = new HdbBrowser(connection);
 
   }
 
@@ -206,7 +212,7 @@ public class OracleSchema extends HdbReader {
 
     // Construct query
     try {
-      sigExt = new SigExtractQuery(Long.parseLong(sigInfo.sigId));
+      sigExt = new SigExtractQuery(connection.getDbId(),Long.parseLong(sigInfo.sigId));
       sigExt.setStartDate(startDate);
       sigExt.setEndDate(stopDate);
     } catch (HdbException ex) {
@@ -330,7 +336,7 @@ public class OracleSchema extends HdbReader {
     HdbSigInfo ret = prepareSigInfo(attName);
     attName = ret.name.substring(6).toLowerCase();
 
-    HdbSignal s = new HdbSignal();
+    HdbSignal s = new HdbSignal(connection);
     s.setFullName(attName);
     try {
 

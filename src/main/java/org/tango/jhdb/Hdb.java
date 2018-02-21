@@ -74,9 +74,13 @@ public class Hdb {
   public  static final int HDB_MYSQL     = 2;
   /** Oracle HDB */
   public  static final int HDB_ORACLE    = 3;
+  /** Oracle HDB Archive */
+  public  static final int HDB_ORACLE_ARCH  = 4;
+  /** Oracle HDB Old Archive */
+  public  static final int HDB_ORACLE_OLD_ARCH = 5;
 
   private int hdbType;
-  private static final String[] hdbNames = { "No DB" , "Cassandra", "MySQL", "Oracle"};
+  private static final String[] hdbNames = { "No DB" , "Cassandra", "MySQL", "Oracle" , "Oracle Archive", "Oracle Old Archive"};
   private HdbReader schema;
 
   /**
@@ -156,7 +160,23 @@ public class Hdb {
    */
   public void connectOracle() throws HdbFailed {
     hdbType = HDB_ORACLE;
-    schema = new OracleSchema();
+    schema = new OracleSchema(hdbType);
+  }
+
+  /**
+   * Connects to a Oracle HDB (Archive).
+   */
+  public void connectOracleArchive() throws HdbFailed {
+    hdbType = HDB_ORACLE_ARCH;
+    schema = new OracleSchema(hdbType);
+  }
+
+  /**
+   * Connects to a Oracle HDB (Old Archive).
+   */
+  public void connectOracleOldArchive() throws HdbFailed {
+    hdbType = HDB_ORACLE_OLD_ARCH;
+    schema = new OracleSchema(hdbType);
   }
 
   /**
@@ -192,6 +212,10 @@ public class Hdb {
       connectCassandra(null, null, null, null);
     } else if(hdb.equalsIgnoreCase("ORACLE")) {
       connectOracle();
+    } else if(hdb.equalsIgnoreCase("ORACLE_ARCH")) {
+      connectOracleArchive();
+    } else if(hdb.equalsIgnoreCase("ORACLE_OLDARCH")) {
+      connectOracleOldArchive();
     } else {
       throw new HdbFailed("Wrong HDB_TYPE , MYSQL or CASSANDRA expected");
     }
@@ -236,13 +260,15 @@ public class Hdb {
 
       hdb.connect();
 
-      long t0 = System.currentTimeMillis();
-      String[] attList = hdb.getReader().getAttributeList();
-      long t1 = System.currentTimeMillis();
-      System.out.println("Got "+attList.length+" attributes in " + (t1-t0) + "ms");
+      //long t0 = System.currentTimeMillis();
+      //String[] attList = hdb.getReader().getAttributeList();
+      //long t1 = System.currentTimeMillis();
+      //System.out.println("Got "+attList.length+" attributes in " + (t1-t0) + "ms");
 
-      HdbSigInfo info = hdb.getReader().getSigInfo("tango://orion.esrf.fr:10000/sr/d-ct/1/current");
-      System.out.println("Info="+info);
+      String infoTxt = hdb.getReader().getInfo();
+      System.out.println(infoTxt);
+
+      String attName = "tango://aries/sr/d-ct/1/current";
 
       // Test correlated mode
       /*
@@ -257,8 +283,7 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "24/07/2017 23:00:00", "25/07/2017 01:00:00",
-          "tango://orion.esrf.fr:10000/sr/d-halo/id7/beamcore");
+      test(hdb, "24/02/2011 23:00:00", "25/02/2011 01:00:00",attName);
 
       /*
       // Double RW
