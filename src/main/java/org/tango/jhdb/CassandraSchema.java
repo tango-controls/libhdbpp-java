@@ -41,6 +41,8 @@ import org.tango.jhdb.data.HdbData;
 import org.tango.jhdb.data.HdbDataSet;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Cassandra database access
@@ -48,6 +50,7 @@ import java.util.*;
 public class CassandraSchema extends HdbReader {
 
   public static final String[] DEFAULT_CONTACT_POINTS = {"hdbr1","hdbr2","hdbr3"};
+  public static final boolean extraTimestamp = false;
 
   private Session session;
   private Cluster cluster;
@@ -180,6 +183,11 @@ public class CassandraSchema extends HdbReader {
           .getProtocolOptions()
           .setCompression(ProtocolOptions.Compression.LZ4);
 
+      // Sets the timeout
+      //SocketOptions socketOptions = cluster.getConfiguration().getSocketOptions();
+      //socketOptions.setConnectTimeoutMillis(30000);
+      //socketOptions.setReadTimeoutMillis(30000);
+
       //  Build session on database
       session = cluster.connect(db);
 
@@ -217,20 +225,36 @@ public class CassandraSchema extends HdbReader {
       if( fullPeriod ) {
 
         // Full period query
-        query = "SELECT data_time,data_time_us,recv_time,recv_time_us,insert_time,insert_time_us,error_desc,quality,value_r"+rwField+
+        if( extraTimestamp ) {
+          query = "SELECT data_time,data_time_us,recv_time,recv_time_us,insert_time,insert_time_us,error_desc,quality,value_r"+rwField+
           " FROM " + tableName +
           " WHERE att_conf_id = ?" +
           " AND period = ?";
+        } else {
+          query = "SELECT data_time,data_time_us,error_desc,quality,value_r"+rwField+
+              " FROM " + tableName +
+              " WHERE att_conf_id = ?" +
+              " AND period = ?";
+        }
 
       } else {
 
         // Query for a part of the period
-        query = "SELECT data_time,data_time_us,recv_time,recv_time_us,insert_time,insert_time_us,error_desc,quality,value_r"+rwField+
-            " FROM " + tableName +
-            " WHERE att_conf_id = ?" +
-            " AND period = ?" +
-            " AND data_time >= ?" +
-            " AND data_time <= ?";
+        if( extraTimestamp ) {
+          query = "SELECT data_time,data_time_us,recv_time,recv_time_us,insert_time,insert_time_us,error_desc,quality,value_r"+rwField+
+          " FROM " + tableName +
+          " WHERE att_conf_id = ?" +
+          " AND period = ?" +
+          " AND data_time >= ?" +
+          " AND data_time <= ?";
+        } else {
+          query = "SELECT data_time,data_time_us,error_desc,quality,value_r"+rwField+
+              " FROM " + tableName +
+              " WHERE att_conf_id = ?" +
+              " AND period = ?" +
+              " AND data_time >= ?" +
+              " AND data_time <= ?";
+        }
 
       }
 
@@ -247,8 +271,10 @@ public class CassandraSchema extends HdbReader {
   public String getInfo() throws HdbFailed {
 
     String version =  "Cassandra HDB++ API v" + Hdb.getVersion() + "\n";
-    String url = "Cluster:" + session.getCluster().getClusterName();
-    return version + url;
+    String url = "Cluster:" + session.getCluster().getClusterName() + "\n";
+    String ctimeout = "connect Timeout: "+  session.getCluster().getConfiguration().getSocketOptions().getConnectTimeoutMillis() + " ms\n";
+    String rtimeout = "Read Timeout: "+  session.getCluster().getConfiguration().getSocketOptions().getReadTimeoutMillis() + " ms";
+    return version + url + ctimeout + rtimeout;
 
   }
 
@@ -377,7 +403,7 @@ public class CassandraSchema extends HdbReader {
 
   public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
 
-    String query = "SELECT recv_time,recv_time_us,insert_time,insert_time_us,label,unit,standard_unit,display_unit,format,"+
+    String query = "SELECT recv_time,recv_time_us,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
         " FROM att_parameter " +
         " WHERE att_conf_id=" + UUID.fromString(sigInfo.sigId) +
@@ -393,25 +419,25 @@ public class CassandraSchema extends HdbReader {
 
       if(rw!=null) {
 
-        ret.recvTime = timeValue(rw.getDate(0), rw.getInt(1));
-        ret.insertTime = timeValue(rw.getDate(2), rw.getInt(3));
-        ret.label = rw.getString(4);
-        ret.unit = rw.getString(5);
+        ret.recvTime = timeValue(rw.getTimestamp(0), rw.getInt(1));
+        ret.insertTime = 0;
+        ret.label = rw.getString(2);
+        ret.unit = rw.getString(3);
         try {
-          ret.standard_unit = Double.parseDouble(rw.getString(6));
+          ret.standard_unit = Double.parseDouble(rw.getString(4));
         } catch (NumberFormatException e) {
           ret.standard_unit = 1.0;
         }
         try {
-          ret.display_unit = Double.parseDouble(rw.getString(7));
+          ret.display_unit = Double.parseDouble(rw.getString(5));
         } catch (NumberFormatException e) {
           ret.display_unit = 1.0;
         }
-        ret.format = rw.getString(8);
-        ret.archive_rel_change = rw.getString(9);
-        ret.archive_abs_change = rw.getString(10);
-        ret.archive_period = rw.getString(11);
-        ret.description = rw.getString(12);
+        ret.format = rw.getString(6);
+        ret.archive_rel_change = rw.getString(7);
+        ret.archive_abs_change = rw.getString(8);
+        ret.archive_period = rw.getString(9);
+        ret.description = rw.getString(10);
 
       } else {
         throw new HdbFailed("Cannot get parameter for " + sigInfo.name);
@@ -438,7 +464,7 @@ public class CassandraSchema extends HdbReader {
 
     checkDates(start_date,stop_date);
 
-    String query = "SELECT recv_time,recv_time_us,insert_time,insert_time_us,label,unit,standard_unit,display_unit,format,"+
+    String query = "SELECT recv_time,recv_time_us,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
         " FROM att_parameter " +
         " WHERE att_conf_id=" + UUID.fromString(sigInfo.sigId) +
@@ -455,25 +481,25 @@ public class CassandraSchema extends HdbReader {
       for(Row rw:resultSet) {
 
         HdbSigParam hd = new HdbSigParam();
-        hd.recvTime = timeValue(rw.getDate(0), rw.getInt(1));
-        hd.insertTime = timeValue(rw.getDate(2), rw.getInt(3));
-        hd.label = rw.getString(4);
-        hd.unit = rw.getString(5);
+        hd.recvTime = timeValue(rw.getTimestamp(0), rw.getInt(1));
+        hd.insertTime = 0;
+        hd.label = rw.getString(2);
+        hd.unit = rw.getString(3);
         try {
-          hd.standard_unit = Double.parseDouble(rw.getString(6));
+          hd.standard_unit = Double.parseDouble(rw.getString(4));
         } catch (NumberFormatException e) {
           hd.standard_unit = 1.0;
         }
         try {
-          hd.display_unit = Double.parseDouble(rw.getString(7));
+          hd.display_unit = Double.parseDouble(rw.getString(5));
         } catch (NumberFormatException e) {
           hd.display_unit = 1.0;
         }
-        hd.format = rw.getString(8);
-        hd.archive_rel_change = rw.getString(9);
-        hd.archive_abs_change = rw.getString(10);
-        hd.archive_period = rw.getString(11);
-        hd.description = rw.getString(12);
+        hd.format = rw.getString(6);
+        hd.archive_rel_change = rw.getString(7);
+        hd.archive_abs_change = rw.getString(8);
+        hd.archive_period = rw.getString(9);
+        hd.description = rw.getString(10);
 
         ret.add(hd);
 
@@ -509,6 +535,8 @@ public class CassandraSchema extends HdbReader {
     ArrayList<Object> wvalue = null;
     if(isRW) wvalue = new ArrayList<Object>();
 
+    int fetchSize = 5000;
+
     for(int i=0;i<nbPeriod;i+=MAX_ASYNCH_CALL) {
 
       ArrayList<ResultSetFuture> resultSetFutures = new ArrayList<ResultSetFuture>();
@@ -535,9 +563,8 @@ public class CassandraSchema extends HdbReader {
 
         // Launch asynchronous calls
         boundStatement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-        boundStatement.setFetchSize(5000);
+        boundStatement.setFetchSize(fetchSize);
         resultSetFutures.add(session.executeAsync(boundStatement));
-
       }
 
       // Wait end of result
@@ -574,30 +601,50 @@ public class CassandraSchema extends HdbReader {
 
               case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RO:
               case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RW:
-                setValue(value, rw.getBool(8));
-                if (isRW) setValue(wvalue, rw.getBool(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getBool(8));
+                  if (isRW) setValue(wvalue, rw.getBool(9));
+                } else {
+                  setValue(value, rw.getBool(4));
+                  if (isRW) setValue(wvalue, rw.getBool(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RO:
               case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RW:
-                setValueBoolean(value, rw.getList(8, Boolean.class));
-                if (isRW) setValueBoolean(wvalue, rw.getList(9, Boolean.class));
+                if(extraTimestamp) {
+                  setValueBoolean(value, rw.getList(8, Boolean.class));
+                  if (isRW) setValueBoolean(wvalue, rw.getList(9, Boolean.class));
+                } else {
+                  setValueBoolean(value, rw.getList(4, Boolean.class));
+                  if (isRW) setValueBoolean(wvalue, rw.getList(5, Boolean.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_SHORT_RO:
               case HdbSigInfo.TYPE_SCALAR_SHORT_RW:
               case HdbSigInfo.TYPE_SCALAR_UCHAR_RO:
               case HdbSigInfo.TYPE_SCALAR_UCHAR_RW:
-                setValue(value, (short) rw.getInt(8));
-                if (isRW) setValue(wvalue, (short) rw.getInt(9));
+                if(extraTimestamp) {
+                  setValue(value, (short) rw.getInt(8));
+                  if (isRW) setValue(wvalue, (short) rw.getInt(9));
+                } else {
+                  setValue(value, (short) rw.getInt(4));
+                  if (isRW) setValue(wvalue, (short) rw.getInt(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_SHORT_RO:
               case HdbSigInfo.TYPE_ARRAY_SHORT_RW:
               case HdbSigInfo.TYPE_ARRAY_UCHAR_RO:
               case HdbSigInfo.TYPE_ARRAY_UCHAR_RW:
-                setValueShort(value, rw.getList(8, Integer.class));
-                if (isRW) setValueShort(wvalue, rw.getList(9, Integer.class));
+                if(extraTimestamp) {
+                  setValueShort(value, rw.getList(8, Integer.class));
+                  if (isRW) setValueShort(wvalue, rw.getList(9, Integer.class));
+                } else {
+                  setValueShort(value, rw.getList(4, Integer.class));
+                  if (isRW) setValueShort(wvalue, rw.getList(5, Integer.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_LONG_RO:
@@ -606,8 +653,13 @@ public class CassandraSchema extends HdbReader {
               case HdbSigInfo.TYPE_SCALAR_USHORT_RW:
               case HdbSigInfo.TYPE_SCALAR_STATE_RO:
               case HdbSigInfo.TYPE_SCALAR_STATE_RW:
-                setValue(value, rw.getInt(8));
-                if (isRW) setValue(wvalue, rw.getInt(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getInt(8));
+                  if (isRW) setValue(wvalue, rw.getInt(9));
+                } else {
+                  setValue(value, rw.getInt(4));
+                  if (isRW) setValue(wvalue, rw.getInt(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_LONG_RO:
@@ -616,73 +668,130 @@ public class CassandraSchema extends HdbReader {
               case HdbSigInfo.TYPE_ARRAY_USHORT_RW:
               case HdbSigInfo.TYPE_ARRAY_STATE_RO:
               case HdbSigInfo.TYPE_ARRAY_STATE_RW:
-                setValueInteger(value, rw.getList(8, Integer.class));
-                if (isRW) setValueInteger(wvalue, rw.getList(9, Integer.class));
+                if(extraTimestamp) {
+                  setValueInteger(value, rw.getList(8, Integer.class));
+                  if (isRW) setValueInteger(wvalue, rw.getList(9, Integer.class));
+                } else {
+                  setValueInteger(value, rw.getList(4, Integer.class));
+                  if (isRW) setValueInteger(wvalue, rw.getList(5, Integer.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_LONG64_RO:
               case HdbSigInfo.TYPE_SCALAR_LONG64_RW:
               case HdbSigInfo.TYPE_SCALAR_ULONG_RO:
               case HdbSigInfo.TYPE_SCALAR_ULONG_RW:
-                setValue(value, rw.getLong(8));
-                if (isRW) setValue(wvalue, rw.getLong(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getLong(8));
+                  if (isRW) setValue(wvalue, rw.getLong(9));
+                } else {
+                  setValue(value, rw.getLong(4));
+                  if (isRW) setValue(wvalue, rw.getLong(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_LONG64_RO:
               case HdbSigInfo.TYPE_ARRAY_LONG64_RW:
               case HdbSigInfo.TYPE_ARRAY_ULONG_RO:
               case HdbSigInfo.TYPE_ARRAY_ULONG_RW:
-                setValueLong(value, rw.getList(8, Long.class));
-                if (isRW) setValueLong(wvalue, rw.getList(9, Long.class));
+                if(extraTimestamp) {
+                  setValueLong(value, rw.getList(8, Long.class));
+                  if (isRW) setValueLong(wvalue, rw.getList(9, Long.class));
+                } else {
+                  setValueLong(value, rw.getList(4, Long.class));
+                  if (isRW) setValueLong(wvalue, rw.getList(5, Long.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_DOUBLE_RO:
               case HdbSigInfo.TYPE_SCALAR_DOUBLE_RW:
-                setValue(value, rw.getDouble(8));
-                if (isRW) setValue(wvalue, rw.getDouble(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getDouble(8));
+                  if (isRW) setValue(wvalue, rw.getDouble(9));
+                } else {
+                  setValue(value, rw.getDouble(4));
+                  if (isRW) setValue(wvalue, rw.getDouble(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_DOUBLE_RO:
               case HdbSigInfo.TYPE_ARRAY_DOUBLE_RW:
-                setValueDouble(value, rw.getList(8, Double.class));
-                if (isRW) setValueDouble(wvalue, rw.getList(9, Double.class));
+                if(extraTimestamp) {
+                  setValueDouble(value, rw.getList(8, Double.class));
+                  if (isRW) setValueDouble(wvalue, rw.getList(9, Double.class));
+                } else {
+                  setValueDouble(value, rw.getList(4, Double.class));
+                  if (isRW) setValueDouble(wvalue, rw.getList(5, Double.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_FLOAT_RO:
               case HdbSigInfo.TYPE_SCALAR_FLOAT_RW:
-                setValue(value, rw.getFloat(8));
-                if (isRW) setValue(wvalue, rw.getFloat(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getFloat(8));
+                  if (isRW) setValue(wvalue, rw.getFloat(9));
+                } else {
+                  setValue(value, rw.getFloat(4));
+                  if (isRW) setValue(wvalue, rw.getFloat(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_FLOAT_RO:
               case HdbSigInfo.TYPE_ARRAY_FLOAT_RW:
-                setValueFloat(value, rw.getList(8, Float.class));
-                if (isRW) setValueFloat(wvalue, rw.getList(9, Float.class));
+                if(extraTimestamp) {
+                  setValueFloat(value, rw.getList(8, Float.class));
+                  if (isRW) setValueFloat(wvalue, rw.getList(9, Float.class));
+                } else {
+                  setValueFloat(value, rw.getList(4, Float.class));
+                  if (isRW) setValueFloat(wvalue, rw.getList(5, Float.class));
+                }
                 break;
 
               case HdbSigInfo.TYPE_SCALAR_STRING_RO:
               case HdbSigInfo.TYPE_SCALAR_STRING_RW:
-                setValue(value, rw.getString(8));
-                if (isRW) setValue(wvalue, rw.getString(9));
+                if(extraTimestamp) {
+                  setValue(value, rw.getString(8));
+                  if (isRW) setValue(wvalue, rw.getString(9));
+                } else {
+                  setValue(value, rw.getString(4));
+                  if (isRW) setValue(wvalue, rw.getString(5));
+                }
                 break;
 
               case HdbSigInfo.TYPE_ARRAY_STRING_RO:
               case HdbSigInfo.TYPE_ARRAY_STRING_RW:
-                setValueString(value, rw.getList(8, String.class));
-                if (isRW) setValueString(wvalue, rw.getList(9, String.class));
+                if(extraTimestamp) {
+                  setValueString(value, rw.getList(8, String.class));
+                  if (isRW) setValueString(wvalue, rw.getList(9, String.class));
+                } else {
+                  setValueString(value, rw.getList(4, String.class));
+                  if (isRW) setValueString(wvalue, rw.getList(5, String.class));
+                }
                 break;
 
             }
 
-            hd.parse(
-                timeValue(rw.getDate(0), rw.getInt(1)), //Tango timestamp
-                timeValue(rw.getDate(2), rw.getInt(3)), //Event receive timestamp
-                timeValue(rw.getDate(4), rw.getInt(5)), //Recording timestamp
+            if(extraTimestamp) {
+              hd.parse(
+                timeValue(rw.getTimestamp(0), rw.getInt(1)), //Tango timestamp
+                timeValue(rw.getTimestamp(2), rw.getInt(3)), //Event receive timestamp
+                timeValue(rw.getTimestamp(4), rw.getInt(5)), //Recording timestamp
                 rw.getString(6),                   // Error string
                 rw.getInt(7),                      // Quality value
                 value,                             // Read value
                 wvalue                             // Write value
-            );
+              );
+            } else {
+              hd.parse(
+                  timeValue(rw.getTimestamp(0), rw.getInt(1)), //Tango timestamp
+                  0,                                           //Event receive timestamp
+                  0,                                           //Recording timestamp
+                  rw.getString(2),                   // Error string
+                  rw.getInt(3),                      // Quality value
+                  value,                             // Read value
+                  wvalue                             // Write value
+              );
+            }
             ret.add(hd);
             remainingInPage--;
             if((remainingInPage == 100) && !rs.isFullyFetched())

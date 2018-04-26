@@ -13,9 +13,6 @@ import java.util.Date;
 
 public class Period {
 
-  // Casasandra granularity partitioning (in millisecond)
-  final static long GRANULARITY = 60*60*24*1000;
-
   final static SimpleDateFormat periodFormat = new SimpleDateFormat("yyyy-MM-dd");
 
   Timestamp start;

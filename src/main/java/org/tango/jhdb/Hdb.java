@@ -268,7 +268,7 @@ public class Hdb {
       String infoTxt = hdb.getReader().getInfo();
       System.out.println(infoTxt);
 
-      String attName = "tango://aries/sr/d-ct/1/current";
+      String attName = "tango://orion.esrf.fr:10000/sr/d-bpm/all/sa";
 
       // Test correlated mode
       /*
@@ -283,7 +283,7 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "24/02/2011 23:00:00", "25/02/2011 01:00:00",attName);
+      test(hdb, "26/04/2018 03:00:00", "26/04/2018 09:00:00",attName);
 
       /*
       // Double RW
