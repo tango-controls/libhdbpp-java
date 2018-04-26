@@ -536,6 +536,8 @@ public class CassandraSchema extends HdbReader {
     if(isRW) wvalue = new ArrayList<Object>();
 
     int fetchSize = 5000;
+    if(sigInfo.isArray())
+       fetchSize = 500;
 
     for(int i=0;i<nbPeriod;i+=MAX_ASYNCH_CALL) {
 
@@ -592,7 +594,6 @@ public class CassandraSchema extends HdbReader {
       try {
 
         for (ResultSet rs : resultSets) {
-          int remainingInPage = rs.getAvailableWithoutFetching();
           for (Row rw : rs) {
 
             HdbData hd = HdbData.createData(sigInfo.type);
@@ -793,9 +794,9 @@ public class CassandraSchema extends HdbReader {
               );
             }
             ret.add(hd);
-            remainingInPage--;
-            if((remainingInPage == 100) && !rs.isFullyFetched())
+            if(( rs.getAvailableWithoutFetching() == 100) && !rs.isFullyFetched()) {
               rs.fetchMoreResults();
+            }
           }
         }
 

@@ -283,7 +283,7 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "26/04/2018 03:00:00", "26/04/2018 09:00:00",attName);
+      test(hdb, "25/04/2018 09:00:00", "26/04/2018 09:00:00",attName);
 
       /*
       // Double RW
