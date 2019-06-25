@@ -20,7 +20,7 @@
       <dependency>
           <groupId>com.datastax.cassandra</groupId>
           <artifactId>cassandra-driver-core</artifactId>
-          <version>RELEASE</version>
+          <version>3.7.1</version>
       </dependency>
 
       <dependency>
@@ -33,6 +33,12 @@
         <groupId>mysql</groupId>
         <artifactId>mysql-connector-java</artifactId>
         <version>5.1.31</version>
+      </dependency>
+
+      <dependency>
+          <groupId>postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>RELEASE</version>
       </dependency>
 
       <dependency>

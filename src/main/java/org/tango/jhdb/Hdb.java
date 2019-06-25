@@ -33,7 +33,9 @@
 
 package org.tango.jhdb;
 
+import org.tango.jhdb.data.HdbData;
 import org.tango.jhdb.data.HdbDataSet;
+import org.tango.jhdb.data.HdbDoubleArray;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -78,9 +80,12 @@ public class Hdb {
   public  static final int HDB_ORACLE_ARCH  = 4;
   /** Oracle HDB Old Archive */
   public  static final int HDB_ORACLE_OLD_ARCH = 5;
+  /** PostgreSQL HDB++ */
+  public  static final int HDB_POSTGRESQL     = 6;
 
   private int hdbType;
-  private static final String[] hdbNames = { "No DB" , "Cassandra", "MySQL", "Oracle" , "Oracle Archive", "Oracle Old Archive"};
+  private static final String[] hdbNames = { "No DB" , "Cassandra", "MySQL", "Oracle" ,
+                                             "Oracle Archive", "Oracle Old Archive", "PostgreSQL"};
   private HdbReader schema;
 
   /**
@@ -135,6 +140,28 @@ public class Hdb {
   }
 
   /**
+   * Connects to a PostgreSQL HDB.
+   * @param host PostgreSQL hostname
+   * @param db Database name (default is "hdb")
+   * @param user PostgreSQL user name
+   * @param passwd PostgreSQL user password
+   * @param port PostgreSQL databse port (pass 0 for default PostgreSQL port)
+   * @throws HdbFailed in case of failure
+   */
+  public void connectPostgreSQL(String host,String db,String user,String passwd,short port) throws HdbFailed {
+    hdbType = HDB_POSTGRESQL;
+    schema = new PostgreSQLSchema(host,db,user,passwd,port);
+  }
+
+  /**
+   * Connects to a PostgreSQL HDB.
+   */
+  public void connectPostgreSQL() throws HdbFailed {
+    hdbType = HDB_POSTGRESQL;
+    schema = new PostgreSQLSchema(null,null,null,null,(short)0);
+  }
+
+  /**
    * Connects to a Cassandra HDB.
    * @param contacts List of contact points (at least one of the hostname of the cassandra cluster)
    * @param db Database name (default is "hdb")
@@ -182,7 +209,7 @@ public class Hdb {
   /**
    * Connect to HDB either using MySQL or Cassandra according to the following environment variables.
    *
-   * HDB_TYPE  Connection type (MYSQL or CASSANDRA)
+   * HDB_TYPE  Connection type (MYSQL or CASSANDRA or POSTGRESQL)
    * HDB_NAME  Database name (default is "hdb")
    * HDB_USER
    * HDB_PASSWORD
@@ -190,6 +217,10 @@ public class Hdb {
    * MySQL specific
    * HDB_MYSQL_PORT
    * HDB_MYSQL_HOST
+   *
+   * PostgreSQL specific
+   * HDB_POSTGRESQL_PORT
+   * HDB_POSTGRESQL_HOST
    *
    * Cassandra specific
    * HDB_CONTACT_POINTS
@@ -210,6 +241,8 @@ public class Hdb {
       connectMySQL(null,null,null,null,(short)0);
     } else if(hdb.equalsIgnoreCase("CASSANDRA")) {
       connectCassandra(null, null, null, null);
+    } else if(hdb.equalsIgnoreCase("POSTGRESQL")) {
+      connectPostgreSQL(null, null, null, null, (short) 0);
     } else if(hdb.equalsIgnoreCase("ORACLE")) {
       connectOracle();
     } else if(hdb.equalsIgnoreCase("ORACLE_ARCH")) {
@@ -217,7 +250,7 @@ public class Hdb {
     } else if(hdb.equalsIgnoreCase("ORACLE_OLDARCH")) {
       connectOracleOldArchive();
     } else {
-      throw new HdbFailed("Wrong HDB_TYPE , MYSQL or CASSANDRA expected");
+      throw new HdbFailed("Wrong HDB_TYPE: MYSQL, POSTGRESQL or CASSANDRA expected");
     }
 
   }
@@ -238,8 +271,17 @@ public class Hdb {
     String typeStr = "";
     if(data.size()>0) typeStr = HdbSigInfo.typeStr[data.get(0).getType()];
     System.out.println("(" + data.size() + " records) "  + typeStr);
-    for(int i=0;i<data.size() && i<10;i++)
-      System.out.println("  Rec #"+i+" :"+data.get(i));
+    for(int i=0;i<data.size() && i<10;i++)  {
+      HdbData hd = data.get(i);
+      System.out.println("  Rec #"+i+" :"+hd);
+      if( hd.getType() == HdbSigInfo.TYPE_ARRAY_DOUBLE_RO ) {
+        HdbDoubleArray hda = (HdbDoubleArray)hd;
+        for(int j=0;j<hda.getValue().length;j++) {
+          System.out.println("    #"+j+" "+hda.getValue()[j]);
+        }
+      }
+
+    }
 
   }
 
@@ -259,16 +301,14 @@ public class Hdb {
     try {
 
       hdb.connect();
-
-      //long t0 = System.currentTimeMillis();
-      //String[] attList = hdb.getReader().getAttributeList();
-      //long t1 = System.currentTimeMillis();
-      //System.out.println("Got "+attList.length+" attributes in " + (t1-t0) + "ms");
-
       String infoTxt = hdb.getReader().getInfo();
       System.out.println(infoTxt);
 
-      String attName = "tango://orion.esrf.fr:10000/sr/d-bpm/all/sa";
+      long t0 = System.currentTimeMillis();
+      String[] attList = hdb.getReader().getAttributeList();
+      long t1 = System.currentTimeMillis();
+      System.out.println("Got "+attList.length+" attributes in " + (t1-t0) + "ms");
+
 
       // Test correlated mode
       /*
@@ -283,7 +323,8 @@ public class Hdb {
       */
 
       // Double RO
-      test(hdb, "25/04/2018 09:00:00", "26/04/2018 09:00:00",attName);
+      test(hdb,"05/11/2018 12:00:00","05/11/2018 13:00:00",
+          "tango://orion.esrf.fr:10000/sr/d-ct/1/current");
 
       /*
       // Double RW
@@ -293,18 +334,20 @@ public class Hdb {
       // Float RO
       test(hdb,"09/07/2015 01:00:00","10/07/2015 01:00:00",
           "tango://orion.esrf.fr:10000/sr/d-temp/c25bpm/chamber1");
+      */
 
       // DoulbeArr RO
-      test(hdb,"09/07/2015 12:00:00","09/07/2015 13:00:00",
-          "tango://orion.esrf.fr:10000/sys/d-drops/ss1/harmonics");
+      test(hdb,"01/11/2018 00:00:00","01/11/2018 01:00:00",
+          "tango://orion.esrf.fr:10000/tl1/d-ct/ict-1/bunchcharges");
 
+      /*
       // DoulbeArr RW
       test(hdb,"09/07/2015 12:00:00","09/07/2015 13:00:00",
           "tango://orion.esrf.fr:10000/sr/st-v/all/current");
 
-      // Long RO
-      test(hdb,"09/07/2015 12:00:00","09/07/2015 19:00:00",
-          "tango://orion.esrf.fr:10000/id/id/12/mode");
+
+      test(hdb,"23/04/2019 13:00:00","31/05/2019 13:00:00",
+          "tango://acs.esrf.fr:10000/infra/hqps-vprinter/10/last_event");
 
       // Long RW
       test(hdb,"09/07/2015 12:00:00","09/07/2015 19:00:00",
@@ -341,6 +384,7 @@ public class Hdb {
 
     } catch (HdbFailed e) {
       System.out.println("HdbFailed: "+e.getMessage());
+      e.printStackTrace();
     }
 
     hdb.disconnect();

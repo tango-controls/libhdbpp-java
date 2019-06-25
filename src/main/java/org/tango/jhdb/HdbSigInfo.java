@@ -483,6 +483,7 @@ public class HdbSigInfo {
   public String  name;      // Attribute name
   public String  sigId;     // Identifier
   public int     type;      // Data type
+  public String  tableName; // Table name
   public int     queryConfig=0; // Flag to query config
 
   /**

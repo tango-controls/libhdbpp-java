@@ -49,7 +49,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class CassandraSchema extends HdbReader {
 
-  public static final String[] DEFAULT_CONTACT_POINTS = {"hdbr1","hdbr2","hdbr3"};
+  public static final String[] DEFAULT_CONTACT_POINTS = {"hdbw1","hdbw2","hdbw3"};
   public static final boolean extraTimestamp = false;
 
   private Session session;
@@ -884,10 +884,8 @@ public class CassandraSchema extends HdbReader {
     value.addAll(d);
   }
 
-  //private long timeValue(LocalDate t,int us) {
   private long timeValue(Date t,int us) {
 
-    //long ret = t.getMillisSinceEpoch();
     long ret = t.getTime();
     ret = (ret / 1000) * 1000000;
     ret += us;
