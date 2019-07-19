@@ -85,29 +85,7 @@ public class HdbLong64 extends HdbData {
 
   private long parseLong64(Object value) throws HdbFailed {
 
-    long ret;
-
-    if (value instanceof String) {
-
-      // Value given as string
-      try {
-        String str = (String) value;
-        if (str == null)
-          ret = 0;
-        else
-          ret = Long.parseLong(str);
-      } catch (NumberFormatException e) {
-        throw new HdbFailed("parseLong64: Invalid number syntax for value");
-      }
-
-    } else {
-
-      Long l = (Long) value;
-      ret = l.longValue();
-
-    }
-
-    return ret;
+    return parseInteger(value);
 
   }
 

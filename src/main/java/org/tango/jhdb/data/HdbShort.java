@@ -85,29 +85,7 @@ public class HdbShort extends HdbData {
 
   private short parseShort(Object value) throws HdbFailed {
 
-    short ret;
-
-    if (value instanceof String) {
-
-      // Value given as string
-      try {
-        String str = (String) value;
-        if (str == null)
-          ret = 0;
-        else
-          ret = Short.parseShort(str);
-      } catch (NumberFormatException e) {
-        throw new HdbFailed("parseShort: Invalid number syntax for value");
-      }
-
-    } else {
-
-      Short s = (Short) value;
-      ret = s.shortValue();
-
-    }
-
-    return ret;
+    return (short)parseInteger(value);
 
   }
 

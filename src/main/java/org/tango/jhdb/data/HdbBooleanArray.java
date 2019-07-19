@@ -85,6 +85,9 @@ public class HdbBooleanArray extends HdbData {
 
   private boolean[] parseBooleanArray(ArrayList<Object> value) throws HdbFailed {
 
+    if(value==null)
+      return new boolean[0];
+
     boolean[] ret = new boolean[value.size()];
     if(value.size()==0)
       return ret;
@@ -98,7 +101,7 @@ public class HdbBooleanArray extends HdbData {
           if(str==null) {
             ret[i] = false;
           } else {
-            ret[i] = Boolean.parseBoolean(str);
+            ret[i] = (str.equalsIgnoreCase("true") || str.equalsIgnoreCase("t"));
           }
         }
       } catch(NumberFormatException e) {
@@ -108,7 +111,7 @@ public class HdbBooleanArray extends HdbData {
     } else {
 
       for(int i=0;i<value.size();i++) {
-        Boolean b = (Boolean)value.get(0);
+        Boolean b = (Boolean)value.get(i);
         ret[i] = b.booleanValue();
       }
 

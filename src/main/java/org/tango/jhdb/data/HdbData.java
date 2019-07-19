@@ -314,6 +314,49 @@ public abstract class HdbData {
 
   public abstract void applyConversionFactor(double f);
 
+  long parseInteger(Object obj) throws HdbFailed {
+
+    long ret = 0;
+
+    if(obj==null)
+      return 0;
+
+    if (obj instanceof Long) {
+
+      return ((Long) obj).longValue();
+
+    } else if (obj instanceof Integer) {
+
+      return ((Integer) obj).longValue();
+
+    } else if (obj instanceof Short) {
+
+      return ((Short) obj).longValue();
+
+    } else if (obj instanceof Byte) {
+
+      return ((Byte) obj).longValue();
+
+    } else if (obj instanceof String) {
+
+      // Value given as string
+      try {
+        String str = (String) obj;
+        ret = Long.parseLong(str);
+      } catch (NumberFormatException e) {
+        throw new HdbFailed("parseInteger: Invalid number syntax for value");
+      }
+
+    } else {
+
+      throw new HdbFailed("parseInteger: Unexpected integer object " + obj.getClass().getName());
+
+    }
+
+    return ret;
+
+  }
+
   /**
    * Create HdbData accroding to the given type
    * @param type Data type

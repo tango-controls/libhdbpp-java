@@ -85,34 +85,15 @@ public class HdbByteArray extends HdbData {
 
   private byte[] parseByteArray(ArrayList<Object> value) throws HdbFailed {
 
+    if(value==null)
+      return new byte[0];
+
     byte[] ret = new byte[value.size()];
     if(value.size()==0)
       return ret;
 
-    if( value.get(0) instanceof String ) {
-
-      // Value given as string
-      try {
-        for(int i=0;i<value.size();i++) {
-          String str = (String)value.get(i);
-          if(str==null) {
-            ret[i] = 0;
-          } else {
-            ret[i] = Byte.parseByte(str);
-          }
-        }
-      } catch(NumberFormatException e) {
-        throw new HdbFailed("parseByteArray: Invalid number syntax");
-      }
-
-    } else {
-
-      for(int i=0;i<value.size();i++) {
-        Byte b = (Byte)value.get(0);
-        ret[i] = b.byteValue();
-      }
-
-    }
+    for(int i=0;i<value.size();i++)
+      ret[i] = (byte)parseInteger(value.get(i));
 
     return ret;
 

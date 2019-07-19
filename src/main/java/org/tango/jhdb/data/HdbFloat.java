@@ -103,7 +103,10 @@ public class HdbFloat extends HdbData {
     } else {
 
       Float f = (Float)value;
-      ret = f.floatValue();
+      if(f==null)
+        ret = Float.NaN;
+      else
+        ret = f.floatValue();
 
     }
 

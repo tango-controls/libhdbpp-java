@@ -85,34 +85,15 @@ public class HdbLongArray extends HdbData {
 
   private int[] parseLongArray(ArrayList<Object> value) throws HdbFailed {
 
+    if(value==null)
+      return new int[0];
+
     int[] ret = new int[value.size()];
     if(value.size()==0)
       return ret;
 
-    if( value.get(0) instanceof String ) {
-
-      // Value given as string
-      try {
-        for(int i=0;i<value.size();i++) {
-          String str = (String)value.get(i);
-          if(str==null) {
-            ret[i] = 0;
-          } else {
-            ret[i] = Integer.parseInt(str);
-          }
-        }
-      } catch(NumberFormatException e) {
-        throw new HdbFailed("parseLongArray: Invalid number syntax");
-      }
-
-    } else {
-
-      for(int i=0;i<value.size();i++) {
-        Integer ii = (Integer)value.get(i);
-        ret[i] = ii.intValue();
-      }
-
-    }
+    for(int i=0;i<value.size();i++)
+      ret[i] = (int)parseInteger(value.get(i));
 
     return ret;
 

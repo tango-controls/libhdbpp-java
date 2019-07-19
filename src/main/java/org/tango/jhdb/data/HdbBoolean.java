@@ -87,18 +87,14 @@ public class HdbBoolean extends HdbData {
 
     boolean ret;
 
+    if(value==null)
+      return false;
+
     if( value instanceof String ) {
 
       // Value given as string
-      try {
-        String str = (String)value;
-        if(str==null)
-          ret = false;
-        else
-          ret = Boolean.parseBoolean(str);
-      } catch(NumberFormatException e) {
-        throw new HdbFailed("parseBoolean: Invalid number syntax for value");
-      }
+      String str = (String)value;
+      return ( (str.equalsIgnoreCase("true") || str.equalsIgnoreCase("t")) );
 
     } else {
 

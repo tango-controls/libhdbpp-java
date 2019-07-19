@@ -85,29 +85,7 @@ public class HdbState extends HdbData {
 
   private int parseState(Object value) throws HdbFailed {
 
-    int ret;
-
-    if (value instanceof String) {
-
-      // Value given as string
-      try {
-        String str = (String) value;
-        if (str == null)
-          ret = 0;
-        else
-          ret = Integer.parseInt(str);
-      } catch (NumberFormatException e) {
-        throw new HdbFailed("parseState: Invalid number syntax for value");
-      }
-
-    } else {
-
-      Integer i = (Integer) value;
-      ret = i.intValue();
-
-    }
-
-    return ret;
+    return (int)parseInteger(value);
 
   }
 

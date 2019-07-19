@@ -49,10 +49,14 @@ import java.util.ArrayList;
  * try {
  *
  *   hdb.connect();
+ *
  *   String[] attList = hdb.getReader().getAttributeList();
  *   ArrayList<HdbData> data = hdb.getReader().getData(attName[0],"09/07/2015 12:00:00","10/07/2015 12:00:00");
  *   for(int i=0;i<data.size();i++)
  *     System.out.println("  Rec #"+i+" :"+data.get(i));
+ *
+ *   // Close connection to HDB++
+ *   hdb.disconnect();
  *
  * } catch (HdbFailed e) {
  *   System.out.println(e.getMessage());

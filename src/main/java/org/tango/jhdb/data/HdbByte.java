@@ -85,29 +85,7 @@ public class HdbByte extends HdbData {
 
   private Byte parseByte(Object value) throws HdbFailed {
 
-    byte ret;
-
-    if( value instanceof String ) {
-
-      // Value given as string
-      try {
-        String str = (String)value;
-        if(str==null)
-          ret = 0;
-        else
-          ret = Byte.parseByte(str);
-      } catch(NumberFormatException e) {
-        throw new HdbFailed("parseByte: Invalid number syntax for value");
-      }
-
-    } else {
-
-      Byte b = (Byte)value;
-      ret = b.byteValue();
-
-    }
-
-    return ret;
+    return (byte)parseInteger(value);
 
   }
 
