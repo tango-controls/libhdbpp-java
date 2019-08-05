@@ -52,18 +52,23 @@ public class PostgreSQLSchema extends HdbReader {
   private Connection connection;
   private AttributeBrowser browser=null;
   private String dbURL;
+  private String user;
+  private String passwd;
 
   /**
    * Connects to a MySQL HDB.
    * @param host MySQL hostname
    * @param db Database name (default is "hdb")
-   * @param user MySQL user name
-   * @param passwd MySQL user password
+   * @param _user MySQL user name
+   * @param _passwd MySQL user password
    * @param port MySQL databse port (pass 0 for default Mysql port)
    * @throws HdbFailed in case of failure
    */
 
-  public PostgreSQLSchema(String host,String db,String user,String passwd,short port) throws HdbFailed {
+  public PostgreSQLSchema(String host,String db,String _user,String _passwd,short port) throws HdbFailed {
+
+    user = _user;
+    passwd = _passwd;
 
     if(host==null || host.isEmpty()) {
       host = System.getenv("HDB_POSTGRESQL_HOST");
@@ -114,6 +119,15 @@ public class PostgreSQLSchema extends HdbReader {
       }
     }
 
+    // URL example: jdbc:postgresql://host:port/database
+    dbURL = DEFAULT_DB_URL_PREFIX + host + ":" + Integer.toString(port) + "/" + db;
+
+    connect();
+
+  }
+
+  private void connect() throws HdbFailed {
+
     try {
 
       Properties connectProperties = new Properties();
@@ -121,11 +135,6 @@ public class PostgreSQLSchema extends HdbReader {
       connectProperties.setProperty("password", passwd);
       connectProperties.setProperty("loginTimeout", Integer.toString(10));
       connectProperties.setProperty("tcpKeepAlive ", "true"); //Enable TCP keep-alive probe
-
-      // URL example: jdbc:postgresql://host:port/database
-      dbURL = DEFAULT_DB_URL_PREFIX + host + ":" +
-          Integer.toString(port) + "/" + db;
-
       connection = DriverManager.getConnection(dbURL, connectProperties);
 
     } catch (SQLException e) {
@@ -135,11 +144,13 @@ public class PostgreSQLSchema extends HdbReader {
   }
 
   public void disconnect () {
+
     try {
       connection.close();
     } catch (SQLException e) {
       System.out.println("Warning closing connection : " + e.getMessage());
     }
+
   }
 
   public String getInfo() throws HdbFailed {
@@ -150,7 +161,23 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  private void connectionCheck() throws HdbFailed {
+
+    // Execute a dummy request to check the connection with the database,
+    // In case failure, make a new connection
+    try {
+      connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY).execute("select 1;");
+    } catch (SQLException e) {
+      System.out.println("Reconnecting to "  + this.dbURL);
+      disconnect();
+      connect();
+    }
+
+  }
+
   public String[] getAttributeList() throws HdbFailed {
+
+    connectionCheck();
 
     ArrayList<String> list = new ArrayList<String>();
 
@@ -206,6 +233,8 @@ public class PostgreSQLSchema extends HdbReader {
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
+    connectionCheck();
+
     HdbSigInfo ret = prepareSigInfo(attName);
     attName = ret.name;
 
@@ -259,6 +288,8 @@ public class PostgreSQLSchema extends HdbReader {
 
     String query;
     int queryCount = 0;
+
+    connectionCheck();
 
     if (hasProgressListener()) {
 
@@ -443,6 +474,8 @@ public class PostgreSQLSchema extends HdbReader {
 
   public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
 
+    connectionCheck();
+
     String query = "SELECT recv_time,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
         " FROM att_parameter " +
@@ -503,6 +536,7 @@ public class PostgreSQLSchema extends HdbReader {
                                           String stop_date) throws HdbFailed {
 
     checkDates(start_date,stop_date);
+    connectionCheck();
 
     String query = "SELECT recv_time,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
