@@ -295,7 +295,7 @@ public class PostgreSQLSchema extends HdbReader {
 
       // Get a count of the request
       query = "SELECT count(*) FROM " + sigInfo.tableName +
-          " WHERE att_conf_id='" + sigInfo.type + "'" +
+          " WHERE att_conf_id='" + sigInfo.sigId + "'" +
           " AND data_time>='" + toDBDate(start_date) + "'" +
           " AND data_time<='" + toDBDate(stop_date) + "'";
 
@@ -338,7 +338,10 @@ public class PostgreSQLSchema extends HdbReader {
       int nbRow = 0;
 
       Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-      statement.setFetchSize(0);
+      if(sigInfo.isArray())
+        statement.setFetchSize(arrayFetchSize);
+      else
+        statement.setFetchSize(fetchSize);
       ResultSet rs = statement.executeQuery(query);
       while (rs.next()) {
 

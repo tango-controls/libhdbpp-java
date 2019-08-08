@@ -63,6 +63,8 @@ public abstract class HdbReader {
 
   int totalRequest;
   int currentRequest;
+  int fetchSize = 5000;
+  int arrayFetchSize = 500;
 
   // Default user and password
   static final String DEFAULT_DB_NAME = "hdb";
@@ -88,6 +90,22 @@ public abstract class HdbReader {
     HdbSigInfo sigInfo = getSigInfo(attName);
     return getData(sigInfo, startDate, stopDate);
 
+  }
+
+  /**
+   * Sets the fetch size for spectrum data (default is 500)
+   * @param size Fetch size (in number of rows)
+   */
+  void setArrayFetchSize(int size) {
+    arrayFetchSize = size;
+  }
+
+  /**
+   * Sets the fetch size for scalar data (default is 5000)
+   * @param size Fetch size (in number of rows)
+   */
+  void setFetchSize(int size) {
+    fetchSize = size;
   }
 
   /**

@@ -535,10 +535,6 @@ public class CassandraSchema extends HdbReader {
     ArrayList<Object> wvalue = null;
     if(isRW) wvalue = new ArrayList<Object>();
 
-    int fetchSize = 5000;
-    if(sigInfo.isArray())
-       fetchSize = 500;
-
     for(int i=0;i<nbPeriod;i+=MAX_ASYNCH_CALL) {
 
       ArrayList<ResultSetFuture> resultSetFutures = new ArrayList<ResultSetFuture>();
@@ -565,7 +561,10 @@ public class CassandraSchema extends HdbReader {
 
         // Launch asynchronous calls
         boundStatement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-        boundStatement.setFetchSize(fetchSize);
+        if(sigInfo.isArray())
+          boundStatement.setFetchSize(arrayFetchSize);
+        else
+          boundStatement.setFetchSize(fetchSize);
         resultSetFutures.add(session.executeAsync(boundStatement));
       }
 

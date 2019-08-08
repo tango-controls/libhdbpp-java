@@ -493,7 +493,7 @@ public class MySQLSchema extends HdbReader {
       boolean newItem = false;
 
       Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
-      statement.setFetchSize(Integer.MIN_VALUE);
+      statement.setFetchSize(arrayFetchSize);
       ResultSet rs = statement.executeQuery(query);
       while(rs.next()) {
 
@@ -622,7 +622,7 @@ public class MySQLSchema extends HdbReader {
     try {
 
       Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
-      statement.setFetchSize(Integer.MIN_VALUE);
+      statement.setFetchSize(fetchSize);
       ResultSet rs = statement.executeQuery(query);
       while(rs.next()) {
 
