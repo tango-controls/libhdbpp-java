@@ -5,6 +5,7 @@
 
 src/main/javadoc/
 target/
+src/main/java/test/
 
 #force mave: ignore everything not maven related
 *.iml

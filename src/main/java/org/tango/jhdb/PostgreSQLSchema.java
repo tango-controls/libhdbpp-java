@@ -177,59 +177,43 @@ public class PostgreSQLSchema extends HdbReader {
 
   public String[] getAttributeList() throws HdbFailed {
 
-    connectionCheck();
+    return getList("SELECT att_name FROM att_conf ORDER BY att_name");
 
-    ArrayList<String> list = new ArrayList<String>();
-
-    String query = "SELECT att_name FROM att_conf ORDER BY att_name";
-
-    try {
-      Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
-      ResultSet resultSet = statement.executeQuery(query);
-      while (resultSet.next())
-        list.add(resultSet.getString(1));
-      statement.close();
-    } catch (SQLException e) {
-      throw new HdbFailed("Failed to retrieve attribute list: "+e.getMessage());
-    }
-
-    String[] retStr = new String[list.size()];
-    for(int i=0;i<retStr.length;i++)
-      retStr[i]=list.get(i);
-
-    return retStr;
-
-  }
-
-  private void constructBrowser() throws HdbFailed {
-    if( browser==null )
-      browser = AttributeBrowser.constructBrowser(this);
   }
 
   public String[] getHosts() throws HdbFailed {
-    constructBrowser();
-    return browser.getHosts();
+
+    return getList("select distinct cs_name from att_conf order by cs_name");
+
   }
 
   public String[] getDomains(String host) throws HdbFailed {
-    constructBrowser();
-    return browser.getDomains(host);
+
+    return getList("select distinct domain from att_conf where cs_name='"+host+"' order by domain");
+
   }
 
   public String[] getFamilies(String host,String domain) throws HdbFailed {
-    constructBrowser();
-    return browser.getFamilies(host, domain);
+
+    return getList("select distinct family from att_conf where cs_name='"+host+
+        "' and domain='" + domain + "' order by family");
+
   }
 
   public String[] getMembers(String host,String domain,String family) throws HdbFailed {
-    constructBrowser();
-    return browser.getMembers(host, domain, family);
+
+    return getList("select distinct member from att_conf where cs_name='"+host+
+        "' and domain='" + domain + "' and family='" + family + "'  order by member");
+
   }
 
   public String[] getNames(String host,String domain,String family,String member) throws HdbFailed {
-    constructBrowser();
-    return browser.getNames(host, domain, family, member);
+
+    return getList("select distinct name from att_conf where cs_name='"+host+
+        "' and domain='" + domain + "' and family='" + family + "' and member='" + member + "'  order by name");
+
   }
+
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
@@ -620,6 +604,30 @@ public class PostgreSQLSchema extends HdbReader {
     us = us / 1000;
     ret = ret * 1000000;
     ret += us;
+    return ret;
+
+  }
+
+  private String[] getList(String query) throws HdbFailed {
+
+    connectionCheck();
+
+    ArrayList<String> list = new ArrayList<String>();
+
+    try {
+      Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
+      ResultSet resultSet = statement.executeQuery(query);
+      while (resultSet.next())
+        list.add(resultSet.getString(1));
+      statement.close();
+    } catch (SQLException e) {
+      throw new HdbFailed("Failed to retrieve attribute list: "+e.getMessage());
+    }
+
+    String[] ret = new String[list.size()];
+    for(int i=0;i<ret.length;i++)
+      ret[i] = list.get(i);
+
     return ret;
 
   }
