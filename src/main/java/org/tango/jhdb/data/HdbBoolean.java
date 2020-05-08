@@ -40,18 +40,38 @@ import java.util.ArrayList;
 /**
  * HDB boolean data (8bit integer)
  */
-public class HdbBoolean extends HdbData {
+public class HdbBoolean extends HdbScalarData {
 
   boolean value = false;
   boolean wvalue = false;
 
-  public HdbBoolean(int type) {
-    this.type = type;
+  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  {
+    switch (info.format)
+    {
+      case SCALAR:
+        return new HdbBoolean(info);
+      case SPECTRUM:
+        return new HdbBooleanArray(info);
+      default:
+        throw new HdbFailed("Format :" + info.format + " not supported.");
+    }
   }
 
-  public HdbBoolean(int type,boolean value) {
-    this.type = type;
+  public HdbBoolean(HdbSigInfo info)
+  {
+    super(info);
+  }
+
+  public HdbBoolean(HdbSigInfo info, boolean value) {
+    this(info);
     this.value = value;
+  }
+
+  public HdbBoolean(HdbSigInfo info, boolean value, boolean wvalue) {
+    this(info);
+    this.value = value;
+    this.wvalue = wvalue;
   }
 
   public boolean getValue() throws HdbFailed {
@@ -107,32 +127,9 @@ public class HdbBoolean extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_SCALAR_BOOLEAN_RO)
-      return timeToStr(dataTime)+": "+Boolean.toString(value)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": "+Boolean.toString(value)+";"+Boolean.toString(wvalue)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     // Do nothing here
-  }
-
-  int dataSize() {
-    return 1;
-  }
-  int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
-      return 1;
-    else
-      return 0;
   }
 
   void copyData(HdbData src) {
@@ -179,14 +176,6 @@ public class HdbBoolean extends HdbData {
     }
   }
 
-  public double[] getValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public double[] getWriteValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
   public long getValueAsLong() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -202,13 +191,4 @@ public class HdbBoolean extends HdbData {
       throw new HdbFailed("This datum has no write value");
     }
   }
-
-  public long[] getValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public long[] getWriteValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
 }

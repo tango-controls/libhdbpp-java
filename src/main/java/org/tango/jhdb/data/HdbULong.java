@@ -40,18 +40,31 @@ import java.util.ArrayList;
 /**
  * HDB int data (32 bits unsigned integer)
  */
-public class HdbULong extends HdbData {
+public class HdbULong extends HdbScalarData {
 
   long value = 0;
   long wvalue = 0;
 
-  public HdbULong(int type) {
-    this.type = type;
+  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  {
+    switch (info.format)
+    {
+      case SCALAR:
+        return new HdbULong(info);
+      case SPECTRUM:
+        return new HdbULongArray(info);
+      default:
+        throw new HdbFailed("Format :" + info.format + " not supported.");
+    }
+  }
+  public HdbULong(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbULong(int type,long value) {
-    this.type = type;
+  public HdbULong(HdbSigInfo info, long value, long wvalue) {
+    this(info);
     this.value = value;
+    this.wvalue = wvalue;
   }
 
   public long getValue() throws HdbFailed {
@@ -89,32 +102,10 @@ public class HdbULong extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_SCALAR_ULONG_RO)
-      return timeToStr(dataTime)+": "+Long.toString(value)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": "+Long.toString(value)+";"+Long.toString(wvalue)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (long)(value * f);
     wvalue = (long)(wvalue * f);
-  }
-  int dataSize() {
-    return 1;
-  }
-  int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
-      return 1;
-    else
-      return 0;
   }
 
   void copyData(HdbData src) {
@@ -161,36 +152,19 @@ public class HdbULong extends HdbData {
     }
   }
 
-  public double[] getValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public double[] getWriteValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
   public long getValueAsLong() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
-    return (long)value;
+    return value;
   }
 
   public long getWriteValueAsLong() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
     if(hasWriteValue()) {
-      return (long)wvalue;
+      return wvalue;
     } else {
       throw new HdbFailed("This datum has no write value");
     }
   }
-
-  public long[] getValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public long[] getWriteValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
 }

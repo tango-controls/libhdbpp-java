@@ -237,86 +237,99 @@ public class OracleSchema extends HdbReader {
           usdates[j] = dates[j] * 1000000;
 
         // Convert data
-        int type = sigInfo.type;
-        switch (type) {
-          case HdbSigInfo.TYPE_SCALAR_SHORT_RO:
-            short[] ss = ((ShortScalarHistoryData) data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbShort d = new HdbShort(type, ss[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+        switch (sigInfo.dataType) {
+          case SHORT:
+            if(!sigInfo.isArray()) {
+              short[] ss = ((ShortScalarHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbShort d = new HdbShort(sigInfo, ss[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
+            }
+            else
+            {
+              short[][] as = ((ShortArrayHistoryData)data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbShortArray d = new HdbShortArray(sigInfo, as[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
-          case HdbSigInfo.TYPE_SCALAR_LONG64_RO:
-            long[] sl = ((LongScalarHistoryData) data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbLong64 d = new HdbLong64(type, sl[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+          case LONG64:
+            if(!sigInfo.isArray()) {
+              long[] sl = ((LongScalarHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbLong64 d = new HdbLong64(sigInfo, sl[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
+            }
+            else {
+              long[][] al = ((LongArrayHistoryData)data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbLong64Array d = new HdbLong64Array(sigInfo, al[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
-          case HdbSigInfo.TYPE_SCALAR_FLOAT_RO:
-            float[] sf = ((FloatScalarHistoryData) data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbFloat d = new HdbFloat(type, sf[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+          case FLOAT:
+            if(!sigInfo.isArray()) {
+              float[] sf = ((FloatScalarHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbFloat d = new HdbFloat(sigInfo, sf[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
+            }
+            else
+            {
+              float[][] af = ((FloatArrayHistoryData)data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbFloatArray d = new HdbFloatArray(sigInfo, af[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
-          case HdbSigInfo.TYPE_SCALAR_DOUBLE_RO:
-            double[] sd = ((DoubleScalarHistoryData) data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbDouble d = new HdbDouble(type, sd[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+          case DOUBLE:
+            if(!sigInfo.isArray()) {
+              double[] sd = ((DoubleScalarHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbDouble d = new HdbDouble(sigInfo, sd[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
+            }
+            else {
+              double[][] ad = ((DoubleArrayHistoryData)data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbDoubleArray d = new HdbDoubleArray(sigInfo, ad[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
-          case HdbSigInfo.TYPE_SCALAR_STRING_RO:
-            String[] sst = ((StringScalarHistoryData) data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbString d = new HdbString(type, sst[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+          case STRING:
+            if(!sigInfo.isArray()) {
+              String[] sst = ((StringScalarHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbString d = new HdbString(sigInfo, sst[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
-          case HdbSigInfo.TYPE_ARRAY_CHAR_RO:
-            byte[][] ac = ((CharArrayHistoryData)data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbByteArray d = new HdbByteArray(type, ac[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
-            }
-            break;
-          case HdbSigInfo.TYPE_ARRAY_SHORT_RO:
-            short[][] as = ((ShortArrayHistoryData)data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbShortArray d = new HdbShortArray(type, as[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
-            }
-            break;
-          case HdbSigInfo.TYPE_ARRAY_LONG64_RO:
-            long[][] al = ((LongArrayHistoryData)data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbLong64Array d = new HdbLong64Array(type, al[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
-            }
-            break;
-          case HdbSigInfo.TYPE_ARRAY_FLOAT_RO:
-            float[][] af = ((FloatArrayHistoryData)data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbFloatArray d = new HdbFloatArray(type, af[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
-            }
-            break;
-          case HdbSigInfo.TYPE_ARRAY_DOUBLE_RO:
-            double[][] ad = ((DoubleArrayHistoryData)data).extractData();
-            for (int i = 0; i < recNb; i++) {
-              HdbDoubleArray d = new HdbDoubleArray(type, ad[i]);
-              d.setDataTime(usdates[i]);
-              retList.add(d);
+          case CHAR:
+            if(sigInfo.isArray()) {
+              byte[][] ac = ((CharArrayHistoryData) data).extractData();
+              for (int i = 0; i < recNb; i++) {
+                HdbByteArray d = new HdbByteArray(sigInfo, ac[i]);
+                d.setDataTime(usdates[i]);
+                retList.add(d);
+              }
             }
             break;
         }
@@ -350,21 +363,31 @@ public class OracleSchema extends HdbReader {
         case HdbConst.D_USHORT_TYPE:
           throw new HdbFailed("D_USHORT_TYPE not supported");
         case HdbConst.D_SHORT_TYPE:
-          ret.type = HdbSigInfo.TYPE_SCALAR_SHORT_RO;
+          ret.dataType = HdbSigInfo.Type.SHORT;
+          ret.format = HdbSigInfo.Format.SCALAR;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_ULONG_TYPE:
           throw new HdbFailed("D_ULONG_TYPE not supported");
         case HdbConst.D_LONG_TYPE:
-          ret.type = HdbSigInfo.TYPE_SCALAR_LONG64_RO;
+          ret.dataType = HdbSigInfo.Type.LONG64;
+          ret.format = HdbSigInfo.Format.SCALAR;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_FLOAT_TYPE:
-          ret.type = HdbSigInfo.TYPE_SCALAR_FLOAT_RO;
+          ret.dataType = HdbSigInfo.Type.FLOAT;
+          ret.format = HdbSigInfo.Format.SCALAR;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_DOUBLE_TYPE:
-          ret.type = HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
+          ret.dataType = HdbSigInfo.Type.DOUBLE;
+          ret.format = HdbSigInfo.Format.SCALAR;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_STRING_TYPE:
-          ret.type = HdbSigInfo.TYPE_SCALAR_STRING_RO;
+          ret.dataType = HdbSigInfo.Type.STRING;
+          ret.format = HdbSigInfo.Format.SCALAR;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_FLOAT_READPOINT:
           throw new HdbFailed("D_FLOAT_READPOINT not supported");
@@ -375,25 +398,35 @@ public class OracleSchema extends HdbReader {
         case HdbConst.D_DOUBLE_READPOINT:
           throw new HdbFailed("D_DOUBLE_READPOINT not supported");
         case HdbConst.D_VAR_CHARARR:
-          ret.type = HdbSigInfo.TYPE_ARRAY_CHAR_RO;
+          ret.dataType = HdbSigInfo.Type.CHAR;
+          ret.format = HdbSigInfo.Format.SPECTRUM;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_VAR_STRINGARR:
           throw new HdbFailed("D_VAR_STRINGARR not supported");
         case HdbConst.D_VAR_USHORTARR:
           throw new HdbFailed("D_VAR_USHORTARR not supported");
         case HdbConst.D_VAR_SHORTARR:
-          ret.type = HdbSigInfo.TYPE_ARRAY_SHORT_RO;
+          ret.dataType = HdbSigInfo.Type.SHORT;
+          ret.format = HdbSigInfo.Format.SPECTRUM;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_VAR_ULONGARR:
           throw new HdbFailed("D_VAR_ULONGARR not supported");
         case HdbConst.D_VAR_LONGARR:
-          ret.type = HdbSigInfo.TYPE_ARRAY_LONG64_RO;
+          ret.dataType = HdbSigInfo.Type.LONG64;
+          ret.format = HdbSigInfo.Format.SPECTRUM;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_VAR_FLOATARR:
-          ret.type = HdbSigInfo.TYPE_ARRAY_FLOAT_RO;
+          ret.dataType = HdbSigInfo.Type.FLOAT;
+          ret.format = HdbSigInfo.Format.SPECTRUM;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_VAR_DOUBLEARR:
-          ret.type = HdbSigInfo.TYPE_ARRAY_DOUBLE_RO;
+          ret.dataType = HdbSigInfo.Type.DOUBLE;
+          ret.format = HdbSigInfo.Format.SPECTRUM;
+          ret.access = HdbSigInfo.Access.RO;
           break;
         case HdbConst.D_VAR_FRPARR:
           throw new HdbFailed("D_VAR_FRPARR not supported");
@@ -420,7 +453,7 @@ public class OracleSchema extends HdbReader {
 
     // We do not have this information in the DB
     // Got it from Tango
-    HdbSigParam ret = new HdbSigParam();
+    HdbSigParam ret = new HdbSigParam(sigInfo);
     String attName = sigInfo.name;
 
     try {

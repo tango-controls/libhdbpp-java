@@ -40,17 +40,30 @@ import java.util.ArrayList;
 /**
  * HDB short data (16 bits integer)
  */
-public class HdbShort extends HdbData {
+public class HdbShort extends HdbScalarData {
 
   short value = 0;
   short wvalue = 0;
 
-  public HdbShort(int type) {
-    this.type = type;
+  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  {
+    switch (info.format)
+    {
+      case SCALAR:
+        return new HdbShort(info);
+      case SPECTRUM:
+        return new HdbShortArray(info);
+      default:
+        throw new HdbFailed("Format :" + info.format + " not supported.");
+    }
   }
 
-  public HdbShort(int type,short value) {
-    this.type = type;
+  public HdbShort(HdbSigInfo info) {
+    super(info);
+  }
+
+  public HdbShort(HdbSigInfo info, short value) {
+    this(info);
     this.value = value;
   }
 
@@ -89,34 +102,11 @@ public class HdbShort extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_SCALAR_SHORT_RO)
-      return timeToStr(dataTime)+": "+Short.toString(value)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": "+Short.toString(value)+";"+Short.toString(wvalue)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (short)(value * f);
     wvalue = (short)(wvalue * f);
   }
-  int dataSize() {
-    return 1;
-  }
-  int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
-      return 1;
-    else
-      return 0;
-  }
-
 
   void copyData(HdbData src) {
     this.value = ((HdbShort)src).value;
@@ -162,14 +152,6 @@ public class HdbShort extends HdbData {
     }
   }
 
-  public double[] getValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public double[] getWriteValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
   public long getValueAsLong() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -185,13 +167,4 @@ public class HdbShort extends HdbData {
       throw new HdbFailed("This datum has no write value");
     }
   }
-
-  public long[] getValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public long[] getWriteValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
 }

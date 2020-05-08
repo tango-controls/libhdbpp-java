@@ -38,6 +38,114 @@ package org.tango.jhdb;
  */
 public class HdbSigInfo {
 
+  public static enum Format
+  {
+    SCALAR,
+    SPECTRUM,
+    IMAGE,
+    UNKNOWN;
+
+    public static boolean isArrayType(Format type) {
+      switch(type)
+      {
+        case SPECTRUM:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    }
+
+  public static enum Type
+  {
+    DOUBLE,
+    FLOAT,
+    LONG,
+    LONG64,
+    SHORT,
+    CHAR,
+    ULONG,
+    ULONG64,
+    USHORT,
+    UCHAR,
+    BOOLEAN,
+    STRING,
+    ENUM,
+    STATE,
+    ENCODED,
+    UNKNOWN;
+
+    public static boolean isStateType(Type type)
+    {
+      switch (type) {
+        case STATE:
+          return true;
+        default:
+          return false;
+      }
+    }
+    public static boolean isIntegerType(Type type) {
+      switch(type) {
+        case LONG64:
+        case CHAR:
+        case UCHAR:
+        case SHORT:
+        case USHORT:
+        case LONG:
+        case ULONG:
+        case STATE:
+        case ENUM:
+        case BOOLEAN:
+        case ULONG64:
+          return true;
+        default:
+          return false;
+      }
+
+    }
+    public static boolean isStringType(Type type) {
+
+      switch(type) {
+        case STRING:
+          return true;
+        default:
+          return false;
+      }
+
+    }
+    public static boolean isNumericType(Type type) {
+
+      switch(type) {
+        case ENCODED:
+        case STRING:
+        case UNKNOWN:
+          return false;
+        default:
+          return true;
+      }
+
+    }
+  }
+
+  public static enum Access
+  {
+    RO,
+    RW,
+    WO,
+    UNKNOWN;
+
+    public static boolean isRWType(Access type) {
+      switch(type)
+      {
+        case RW:
+          return true;
+        default:
+          return false;
+      }
+    }
+  }
+
   public final static int TYPE_SCALAR_DOUBLE_RO = 1;
   public final static int TYPE_SCALAR_DOUBLE_RW = 2;
   public final static int TYPE_ARRAY_DOUBLE_RO = 3;
@@ -168,6 +276,11 @@ public class HdbSigInfo {
       "TYPE_ARRAY_ULONG64_RW"
   };
 
+  public boolean isStateType()
+  {
+    return Type.isStateType(dataType);
+  }
+
   /**
    * Returns true if type is a state type
    * @param type Attribute type
@@ -186,6 +299,9 @@ public class HdbSigInfo {
 
   }
 
+  public boolean isIntegerType() {
+    return Type.isIntegerType(dataType);
+  }
   /**
    * Returns true if type is an integer type
    * @param type Attribute type
@@ -240,6 +356,11 @@ public class HdbSigInfo {
 
   }
 
+  public boolean isStringType()
+  {
+    return Type.isStringType(dataType);
+  }
+
   /**
    * Returns true if type is a string type
    * @param type Attribute type
@@ -258,6 +379,10 @@ public class HdbSigInfo {
 
   }
 
+  public boolean isNumericType()
+  {
+    return Type.isNumericType(dataType);
+  }
   /**
   * Returns true if type is a numeric type
   * @param type Attribute type
@@ -278,6 +403,11 @@ public class HdbSigInfo {
         return true;
     }
 
+  }
+
+  public boolean isRWType()
+  {
+    return Access.isRWType(access);
   }
 
   /**
@@ -322,6 +452,11 @@ public class HdbSigInfo {
 
   }
 
+  public boolean isArrayType()
+  {
+    return Format.isArrayType(format);
+  }
+
   /**
    * Returns true if type is an array type
    * @param type Attribute type
@@ -362,6 +497,78 @@ public class HdbSigInfo {
         return false;
     }
 
+  }
+
+  public void setTypeAccessFormatFromName(String stype) throws HdbFailed
+  {
+    boolean error = false;
+    String[] confs = stype.toLowerCase().split("_");
+    if(confs[0].equalsIgnoreCase("scalar"))
+    {
+      format = Format.SCALAR;
+    }
+    else if (confs[0].equalsIgnoreCase("array"))
+    {
+      format = Format.SPECTRUM;
+    }
+    else
+    {
+      error = true;
+      format = Format.UNKNOWN;
+    }
+
+    if(confs[2].equalsIgnoreCase("ro"))
+    {
+      access = Access.RO;
+    }
+    else if (confs[2].equalsIgnoreCase("rw"))
+    {
+      access = Access.RW;
+    }
+    else
+    {
+      error = true;
+      access = Access.UNKNOWN;
+    }
+
+    if (stype.equalsIgnoreCase("devulong64")) {
+      dataType = Type.ULONG64;
+    } else if (stype.equalsIgnoreCase("devstring")) {
+      dataType = Type.STRING;
+    } else if (stype.equalsIgnoreCase("devlong64")) {
+      dataType = Type.LONG64;
+    } else if (stype.equalsIgnoreCase("devfloat")) {
+      dataType = Type.FLOAT;
+    } else if (stype.equalsIgnoreCase("devdouble")) {
+      dataType = Type.DOUBLE;
+    } else if (stype.equalsIgnoreCase("devlong")) {
+      dataType = Type.LONG;
+    } else if (stype.equalsIgnoreCase("devuchar")) {
+      dataType = Type.UCHAR;
+    } else if (stype.equalsIgnoreCase("devencoded")) {
+      dataType = Type.ENCODED;
+    } else if (stype.equalsIgnoreCase("devushort")) {
+      dataType = Type.USHORT;
+    } else if (stype.equalsIgnoreCase("devboolean")) {
+      dataType = Type.BOOLEAN;
+    } else if (stype.equalsIgnoreCase("devstate")) {
+      dataType = Type.STATE;
+    } else if (stype.equalsIgnoreCase("devshort")) {
+      dataType = Type.SHORT;
+    }  else if (stype.equalsIgnoreCase("devulong")) {
+      dataType = Type.ULONG;
+    } else if (stype.equalsIgnoreCase("devchar")) {
+      dataType = Type.CHAR;
+    } else if (stype.equalsIgnoreCase("devenum")) {
+      dataType = Type.ENUM;
+    } else {
+      dataType = Type.UNKNOWN;
+      error = true;
+    }
+    if(error)
+    {
+      throw new HdbFailed("'" + stype + "' : Unknown type");
+    }
   }
 
   /**
@@ -483,47 +690,72 @@ public class HdbSigInfo {
   public String  name;      // Attribute name
   public String  sigId;     // Identifier
   public int     type;      // Data type
+  public Format     format;      // Data type
+  public Type dataType;      // Data type
   public String  tableName; // Table name
   public boolean isWO;      // Write only flag
   public int     queryConfig=0; // Flag to query config
-
+  public Access  access;      // Write only flag
   /**
    * Returns true if this attribute is read/write.
    */
   public boolean isRW() {
-    return isRWType(type);
+    return isRWType();
   }
 
   /**
    * Returns true if this attribute is an array.
    */
   public boolean isArray() {
-    return isArrayType(type);
+    return isArrayType();
   }
 
   /**
    * Returns true if this attribute is numeric.
    */
   public boolean isNumeric() {
-    return isNumericType(type);
+    return isNumericType();
   }
 
   /**
    * Returns true if this attribute is a string or string array.
    */
   public boolean isString() {
-    return isStringType(type);
+    return isStringType();
   }
 
   /**
    * Returns true if this attribute is a state or state array.
    */
   public boolean isState() {
-    return isStateType(type);
+    return isStateType();
   }
 
   public String toString() {
-    return "Id=" + sigId + ",Type=" + Integer.toString(type);
+    return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString();
   }
 
+  @Override
+  public boolean equals(Object info)
+  {
+    if(this == info)
+      return true;
+    if(info == null)
+      return false;
+    if(getClass() != info.getClass())
+      return false;
+    HdbSigInfo o = (HdbSigInfo) info;
+    return o.format == format && o.dataType == dataType && o.access == access;
+  }
+
+  @Override
+  public int hashCode()
+  {
+    return 1000* dataType.ordinal()+ 10 * format.ordinal()+ access.ordinal();
+  }
+
+  public boolean isFloating()
+  {
+    return dataType == Type.DOUBLE || dataType == Type.FLOAT;
+  }
 }

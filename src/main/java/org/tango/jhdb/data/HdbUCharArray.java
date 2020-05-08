@@ -40,18 +40,19 @@ import java.util.ArrayList;
 /**
  * HDB byte array data (8 unsigned bits integer)
  */
-public class HdbUCharArray extends HdbData {
+public class HdbUCharArray extends HdbArrayData {
 
   short[] value = null;
   short[] wvalue = null;
 
-  public HdbUCharArray(int type) {
-    this.type = type;
+  public HdbUCharArray(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbUCharArray(int type,short[] value) {
-    this.type = type;
-    this.value = value;
+  public HdbUCharArray(HdbSigInfo info, short[] value, short[] wvalue) {
+    this(info);
+    this.value = value.clone();
+    this.wvalue = wvalue.clone();
   }
 
   public short[] getValue() throws HdbFailed {
@@ -99,19 +100,6 @@ public class HdbUCharArray extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_ARRAY_UCHAR_RO)
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+","+Integer.toString(wvalue.length)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
@@ -126,7 +114,7 @@ public class HdbUCharArray extends HdbData {
       return value.length;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       if(wvalue==null)
         return 0;
       else
@@ -171,14 +159,6 @@ public class HdbUCharArray extends HdbData {
     return ret.toString();
   }
 
-  public double getValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public double getWriteValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
   public double[] getValueAsDoubleArray() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -197,14 +177,6 @@ public class HdbUCharArray extends HdbData {
     for(int i=0;i<wvalue.length;i++)
       ret[i] = (double)wvalue[i];
     return ret;
-  }
-
-  public long getValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public long getWriteValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
   }
 
   public long[] getValueAsLongArray() throws HdbFailed {

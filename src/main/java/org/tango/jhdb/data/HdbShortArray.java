@@ -40,18 +40,18 @@ import java.util.ArrayList;
 /**
  * HDB short array data (16 bits integer)
  */
-public class HdbShortArray extends HdbData {
+public class HdbShortArray extends HdbArrayData {
 
   short[] value = null;
   short[] wvalue = null;
 
-  public HdbShortArray(int type) {
-    this.type = type;
+  public HdbShortArray(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbShortArray(int type,short[] value) {
-    this.type = type;
-    this.value = value;
+  public HdbShortArray(HdbSigInfo info, short[] value) {
+    this(info);
+    this.value = value.clone();
   }
 
   public short[] getValue() throws HdbFailed {
@@ -99,19 +99,6 @@ public class HdbShortArray extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_ARRAY_SHORT_RO)
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+","+Integer.toString(wvalue.length)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
@@ -126,7 +113,7 @@ public class HdbShortArray extends HdbData {
       return value.length;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       if(wvalue==null)
         return 0;
       else
@@ -171,14 +158,6 @@ public class HdbShortArray extends HdbData {
     return ret.toString();
   }
 
-  public double getValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public double getWriteValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
   public double[] getValueAsDoubleArray() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -197,14 +176,6 @@ public class HdbShortArray extends HdbData {
     for(int i=0;i<wvalue.length;i++)
       ret[i] = (double)wvalue[i];
     return ret;
-  }
-
-  public long getValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public long getWriteValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
   }
 
   public long[] getValueAsLongArray() throws HdbFailed {

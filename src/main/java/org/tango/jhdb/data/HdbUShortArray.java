@@ -40,18 +40,19 @@ import java.util.ArrayList;
 /**
  * HDB ushort array data (16 bits unsigned integer)
  */
-public class HdbUShortArray extends HdbData {
+public class HdbUShortArray extends HdbArrayData {
 
   int[] value = null;
   int[] wvalue = null;
 
-  public HdbUShortArray(int type) {
-    this.type = type;
+  public HdbUShortArray(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbUShortArray(int type,int[] value) {
-    this.type = type;
-    this.value = value;
+  public HdbUShortArray(HdbSigInfo info, int[] value, int[] wvalue) {
+    this(info);
+    this.value = value.clone();
+    this.wvalue = wvalue.clone();
   }
 
   public int[] getValue() throws HdbFailed {
@@ -99,19 +100,6 @@ public class HdbUShortArray extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_ARRAY_USHORT_RO)
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+","+Integer.toString(wvalue.length)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
@@ -126,7 +114,7 @@ public class HdbUShortArray extends HdbData {
       return value.length;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       if(wvalue==null)
         return 0;
       else
@@ -171,14 +159,6 @@ public class HdbUShortArray extends HdbData {
     return ret.toString();
   }
 
-  public double getValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public double getWriteValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
   public double[] getValueAsDoubleArray() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -197,14 +177,6 @@ public class HdbUShortArray extends HdbData {
     for(int i=0;i<wvalue.length;i++)
       ret[i] = (double)wvalue[i];
     return ret;
-  }
-
-  public long getValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public long getWriteValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
   }
 
   public long[] getValueAsLongArray() throws HdbFailed {

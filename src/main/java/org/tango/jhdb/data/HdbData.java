@@ -47,13 +47,17 @@ public abstract class HdbData {
 
   final static SimpleDateFormat dfr = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
-  int    type;
+  public HdbSigInfo info;
   long   dataTime;
   long   recvTime;
   long   insertTime;
   int    qualityFactor;
   String errorMessage=null;
 
+  public HdbData(HdbSigInfo info)
+  {
+    this.info = info;
+  }
   /**
    * Return time of this datum
    */
@@ -97,13 +101,6 @@ public abstract class HdbData {
   }
 
   /**
-   * Return data type
-   */
-  public int getType() {
-    return type;
-  }
-
-  /**
    * Returns true if this record has failed
    */
   public boolean hasFailed() {
@@ -143,14 +140,14 @@ public abstract class HdbData {
    * Returns true whether this datum has a write value
    */
   public boolean hasWriteValue() {
-    return HdbSigInfo.isRWType(type);
+    return info.isRW();
   }
 
   /**
    * Returns true whether this datum is an array
    */
   public boolean isArray() {
-    return HdbSigInfo.isArrayType(type);
+    return info.isArray();
   }
 
   /**
@@ -301,7 +298,7 @@ public abstract class HdbData {
 
   public HdbData copy() throws HdbFailed {
 
-    HdbData ret = HdbData.createData(type);
+    HdbData ret = HdbData.createData(info);
     ret.dataTime=dataTime;
     ret.recvTime=recvTime;
     ret.insertTime=insertTime;
@@ -358,112 +355,43 @@ public abstract class HdbData {
   }
 
   /**
-   * Create HdbData accroding to the given type
-   * @param type Data type
+   * Create HdbData according to the given type
+   * @param info Data type
    * @throws HdbFailed In case of failure
    */
-  public static HdbData createData(int type) throws HdbFailed {
+  public static HdbData createData(HdbSigInfo info) throws HdbFailed {
+      switch (info.dataType) {
+        case DOUBLE:
+          return HdbDouble.createData(info);
+        case FLOAT:
+          return HdbFloat.createData(info);
+        case BOOLEAN:
+          return HdbBoolean.createData(info);
+        case LONG:
+          return HdbLong.createData(info);
+        case LONG64:
+          return HdbLong64.createData(info);
+        case ULONG:
+          return HdbULong.createData(info);
+        case SHORT:
+          return HdbShort.createData(info);
+        case USHORT:
+          return HdbUShort.createData(info);
+        case UCHAR:
+          return HdbUChar.createData(info);
+        case STRING:
+          return HdbString.createData(info);
+        case STATE:
+          return HdbState.createData(info);
+        case ENCODED:
+        case ENUM:
+        case CHAR:
+        case ULONG64:
+          throw new HdbFailed("Type " + info.dataType.toString() + " not supported yet !");
 
-    switch(type) {
-
-      case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RO:
-      case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RW:
-        return new HdbBoolean(type);
-      case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RO:
-      case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RW:
-        return new HdbBooleanArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_CHAR_RO:
-      case HdbSigInfo.TYPE_SCALAR_CHAR_RW:
-        return new HdbByte(type);
-      case HdbSigInfo.TYPE_ARRAY_CHAR_RO:
-      case HdbSigInfo.TYPE_ARRAY_CHAR_RW:
-        return new HdbByteArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_UCHAR_RO:
-      case HdbSigInfo.TYPE_SCALAR_UCHAR_RW:
-        return new HdbUChar(type);
-      case HdbSigInfo.TYPE_ARRAY_UCHAR_RO:
-      case HdbSigInfo.TYPE_ARRAY_UCHAR_RW:
-        return new HdbUCharArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_SHORT_RO:
-      case HdbSigInfo.TYPE_SCALAR_SHORT_RW:
-        return new HdbShort(type);
-      case HdbSigInfo.TYPE_ARRAY_SHORT_RO:
-      case HdbSigInfo.TYPE_ARRAY_SHORT_RW:
-        return new HdbShortArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_USHORT_RO:
-      case HdbSigInfo.TYPE_SCALAR_USHORT_RW:
-        return new HdbUShort(type);
-      case HdbSigInfo.TYPE_ARRAY_USHORT_RO:
-      case HdbSigInfo.TYPE_ARRAY_USHORT_RW:
-        return new HdbUShortArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_LONG_RO:
-      case HdbSigInfo.TYPE_SCALAR_LONG_RW:
-        return new HdbLong(type);
-      case HdbSigInfo.TYPE_ARRAY_LONG_RO:
-      case HdbSigInfo.TYPE_ARRAY_LONG_RW:
-        return new HdbLongArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_ULONG_RO:
-      case HdbSigInfo.TYPE_SCALAR_ULONG_RW:
-        return new HdbULong(type);
-      case HdbSigInfo.TYPE_ARRAY_ULONG_RO:
-      case HdbSigInfo.TYPE_ARRAY_ULONG_RW:
-        return new HdbULongArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_LONG64_RO:
-      case HdbSigInfo.TYPE_SCALAR_LONG64_RW:
-        return new HdbLong64(type);
-      case HdbSigInfo.TYPE_ARRAY_LONG64_RO:
-      case HdbSigInfo.TYPE_ARRAY_LONG64_RW:
-        return new HdbLong64Array(type);
-
-      case HdbSigInfo.TYPE_SCALAR_DOUBLE_RO:
-      case HdbSigInfo.TYPE_SCALAR_DOUBLE_RW:
-        return new HdbDouble(type);
-      case HdbSigInfo.TYPE_ARRAY_DOUBLE_RO:
-      case HdbSigInfo.TYPE_ARRAY_DOUBLE_RW:
-        return new HdbDoubleArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_FLOAT_RO:
-      case HdbSigInfo.TYPE_SCALAR_FLOAT_RW:
-        return new HdbFloat(type);
-      case HdbSigInfo.TYPE_ARRAY_FLOAT_RO:
-      case HdbSigInfo.TYPE_ARRAY_FLOAT_RW:
-        return new HdbFloatArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_STATE_RO:
-      case HdbSigInfo.TYPE_SCALAR_STATE_RW:
-        return new HdbState(type);
-      case HdbSigInfo.TYPE_ARRAY_STATE_RO:
-      case HdbSigInfo.TYPE_ARRAY_STATE_RW:
-        return new HdbStateArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_STRING_RO:
-      case HdbSigInfo.TYPE_SCALAR_STRING_RW:
-        return new HdbString(type);
-      case HdbSigInfo.TYPE_ARRAY_STRING_RO:
-      case HdbSigInfo.TYPE_ARRAY_STRING_RW:
-        return new HdbStringArray(type);
-
-      case HdbSigInfo.TYPE_SCALAR_ENCODED_RO:
-      case HdbSigInfo.TYPE_SCALAR_ENCODED_RW:
-      case HdbSigInfo.TYPE_ARRAY_ENCODED_RO:
-      case HdbSigInfo.TYPE_ARRAY_ENCODED_RW:
-      case HdbSigInfo.TYPE_SCALAR_ULONG64_RO:
-      case HdbSigInfo.TYPE_SCALAR_ULONG64_RW:
-      case HdbSigInfo.TYPE_ARRAY_ULONG64_RO:
-      case HdbSigInfo.TYPE_ARRAY_ULONG64_RW:
-        throw new HdbFailed("Type " + HdbSigInfo.typeStr[type] + " not supported yet !");
-
-      default:
-        throw new HdbFailed("Unknown signal type code=" + type);
-    }
-
+        default:
+          throw new HdbFailed("Unknown signal type=" + info.dataType + ", format=" + info.format);
+      }
   }
 
 }

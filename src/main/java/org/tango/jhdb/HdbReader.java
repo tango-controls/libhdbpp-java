@@ -251,9 +251,11 @@ public abstract class HdbReader {
    */
   public HdbSigInfo getSigInfo(String attName,int queryMode) throws HdbFailed {
     HdbSigInfo ret = getSigInfo(attName);
-    if( queryMode!=HdbSigParam.QUERY_DATA ) {
+    if( queryMode != HdbSigParam.QUERY_DATA ) {
       ret.queryConfig = queryMode;
-      ret.type = HdbSigParam.getType(queryMode);
+      ret.dataType = HdbSigParam.getType(queryMode);
+      ret.format = HdbSigParam.getFormat(queryMode);
+      ret.access = HdbSigParam.getAccess(queryMode);
     }
     return ret;
   }
@@ -488,8 +490,7 @@ public abstract class HdbReader {
 
     }
 
-    result.setName(sigInfo.name);
-    result.setType(sigInfo.type);
+    result.setSigInfo(sigInfo);
     return result;
 
   }
@@ -545,8 +546,7 @@ public abstract class HdbReader {
         }
 
         HdbDataSet newDataSet = new HdbDataSet(newSet);
-        newDataSet.setType(ret[i].getType());
-        newDataSet.setName(ret[i].getName());
+        newDataSet.setSigInfo(ret[i].getSigInfo());
         ret[i] = newDataSet;
 
       }
@@ -615,8 +615,7 @@ public abstract class HdbReader {
         newSet.add(b);
       }
       HdbDataSet newDataSet = new HdbDataSet(newSet);
-      newDataSet.setType(ret[i].getType());
-      newDataSet.setName(ret[i].getName());
+      newDataSet.setSigInfo(ret[i].getSigInfo());
       ret[i] = newDataSet;
     }
 

@@ -49,6 +49,12 @@ public class HdbSigParam {
   public String archive_abs_change;
   public String archive_period;
   public String description;
+  private HdbSigInfo info;
+
+  public HdbSigParam(HdbSigInfo info)
+  {
+    this.info = info;
+  }
 
   public String timeToStr(long time) {
 
@@ -66,45 +72,62 @@ public class HdbSigParam {
    * @return HdbData corresponding to mode
    * @throws HdbFailed In case of failure
    */
-  public static int getType(int mode) throws HdbFailed {
+  public static HdbSigInfo.Type getType(int mode) throws HdbFailed {
 
     switch (mode) {
-
       case QUERY_CFG_ALL:
-        return HdbSigInfo.TYPE_ARRAY_STRING_RO;
-
       case QUERY_CFG_LABEL:
-        return HdbSigInfo.TYPE_SCALAR_STRING_RO;
-
       case QUERY_CFG_UNIT:
-        return HdbSigInfo.TYPE_SCALAR_STRING_RO;
-
-      case QUERY_CFG_DISPLAY_UNIT:
-        return HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
-
-      case QUERY_CFG_STANDARD_UNIT:
-        return HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
-
       case QUERY_CFG_FORMAT:
-        return HdbSigInfo.TYPE_SCALAR_STRING_RO;
-
-      case QUERY_CFG_ARCH_REL_CHANGE:
-        return HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
-
-      case QUERY_CFG_ARCH_ABS_CHANGE:
-        return HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
-
-      case QUERY_CFG_ARCH_PERIOD:
-        return HdbSigInfo.TYPE_SCALAR_DOUBLE_RO;
-
       case QUERY_CFG_DESCRIPTION:
-        return HdbSigInfo.TYPE_SCALAR_STRING_RO;
-
+        return HdbSigInfo.Type.STRING;
+      case QUERY_CFG_DISPLAY_UNIT:
+      case QUERY_CFG_STANDARD_UNIT:
+      case QUERY_CFG_ARCH_REL_CHANGE:
+      case QUERY_CFG_ARCH_ABS_CHANGE:
+      case QUERY_CFG_ARCH_PERIOD:
+        return HdbSigInfo.Type.DOUBLE;
       default:
         throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
-
     }
+  }
 
+  public static HdbSigInfo.Access getAccess(int mode) throws HdbFailed {
+
+    switch (mode) {
+      case QUERY_CFG_ALL:
+      case QUERY_CFG_LABEL:
+      case QUERY_CFG_UNIT:
+      case QUERY_CFG_DISPLAY_UNIT:
+      case QUERY_CFG_STANDARD_UNIT:
+      case QUERY_CFG_FORMAT:
+      case QUERY_CFG_ARCH_REL_CHANGE:
+      case QUERY_CFG_ARCH_ABS_CHANGE:
+      case QUERY_CFG_ARCH_PERIOD:
+      case QUERY_CFG_DESCRIPTION:
+        return HdbSigInfo.Access.RO;
+      default:
+        throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
+    }
+  }
+
+  public static HdbSigInfo.Format getFormat(int mode) throws HdbFailed {
+    switch (mode) {
+      case QUERY_CFG_ALL:
+        return HdbSigInfo.Format.SPECTRUM;
+      case QUERY_CFG_LABEL:
+      case QUERY_CFG_UNIT:
+      case QUERY_CFG_DISPLAY_UNIT:
+      case QUERY_CFG_STANDARD_UNIT:
+      case QUERY_CFG_FORMAT:
+      case QUERY_CFG_ARCH_REL_CHANGE:
+      case QUERY_CFG_ARCH_ABS_CHANGE:
+      case QUERY_CFG_ARCH_PERIOD:
+      case QUERY_CFG_DESCRIPTION:
+        return HdbSigInfo.Format.SCALAR;
+      default:
+        throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
+    }
   }
 
   /**
@@ -130,7 +153,7 @@ public class HdbSigParam {
             "Archive Period: " + archive_period,
             "Description: " + description
         };
-        HdbStringArray d = new HdbStringArray(HdbSigInfo.TYPE_ARRAY_STRING_RO,values);
+        HdbStringArray d = new HdbStringArray(info, values);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -138,7 +161,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_LABEL:
       {
-        HdbString s = new HdbString(HdbSigInfo.TYPE_SCALAR_STRING_RO,label);
+        HdbString s = new HdbString(info, label);
         s.setDataTime(recvTime);
         s.setRecvTime(recvTime);
         return s;
@@ -146,7 +169,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_UNIT:
       {
-        HdbString s = new HdbString(HdbSigInfo.TYPE_SCALAR_STRING_RO,unit);
+        HdbString s = new HdbString(info, unit);
         s.setDataTime(recvTime);
         s.setRecvTime(recvTime);
         return s;
@@ -154,7 +177,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_DISPLAY_UNIT:
       {
-        HdbDouble d = new HdbDouble(HdbSigInfo.TYPE_SCALAR_DOUBLE_RO,display_unit);
+        HdbDouble d = new HdbDouble(info, display_unit);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -162,7 +185,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_STANDARD_UNIT:
       {
-        HdbDouble d = new HdbDouble(HdbSigInfo.TYPE_SCALAR_DOUBLE_RO,standard_unit);
+        HdbDouble d = new HdbDouble(info, standard_unit);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -170,7 +193,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_FORMAT:
       {
-        HdbString s = new HdbString(HdbSigInfo.TYPE_SCALAR_STRING_RO,format);
+        HdbString s = new HdbString(info, format);
         s.setDataTime(recvTime);
         s.setRecvTime(recvTime);
         return s;
@@ -182,7 +205,7 @@ public class HdbSigParam {
         try {
           v = Double.parseDouble(archive_rel_change);
         } catch (NumberFormatException e) {}
-        HdbDouble d = new HdbDouble(HdbSigInfo.TYPE_SCALAR_DOUBLE_RO,v);
+        HdbDouble d = new HdbDouble(info, v);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -194,7 +217,7 @@ public class HdbSigParam {
         try {
           v = Double.parseDouble(archive_abs_change);
         } catch (NumberFormatException e) {}
-        HdbDouble d = new HdbDouble(HdbSigInfo.TYPE_SCALAR_DOUBLE_RO,v);
+        HdbDouble d = new HdbDouble(info, v);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -206,7 +229,7 @@ public class HdbSigParam {
         try {
           v = Double.parseDouble(archive_period);
         } catch (NumberFormatException e) {}
-        HdbDouble d = new HdbDouble(HdbSigInfo.TYPE_SCALAR_DOUBLE_RO,v);
+        HdbDouble d = new HdbDouble(info, v);
         d.setDataTime(recvTime);
         d.setRecvTime(recvTime);
         return d;
@@ -214,7 +237,7 @@ public class HdbSigParam {
 
       case QUERY_CFG_DESCRIPTION:
       {
-        HdbString s = new HdbString(HdbSigInfo.TYPE_SCALAR_STRING_RO,description);
+        HdbString s = new HdbString(info, description);
         s.setDataTime(recvTime);
         s.setRecvTime(recvTime);
         return s;

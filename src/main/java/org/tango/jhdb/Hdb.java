@@ -273,17 +273,17 @@ public class Hdb {
     System.out.print("\n--------> " + attName + " ");
     HdbDataSet data = hdb.getReader().getData(attName,start,stop);
     String typeStr = "";
-    if(data.size()>0) typeStr = HdbSigInfo.typeStr[data.get(0).getType()];
-    System.out.println("(" + data.size() + " records) "  + typeStr);
+//    if(data.size()>0) typeStr = HdbSigInfo.typeStr[data.get(0).getType()];
+//    System.out.println("(" + data.size() + " records) "  + typeStr);
     for(int i=0;i<data.size() && i<10;i++)  {
       HdbData hd = data.get(i);
       System.out.println("  Rec #"+i+" :"+hd);
-      if( hd.getType() == HdbSigInfo.TYPE_ARRAY_DOUBLE_RO ) {
-        HdbDoubleArray hda = (HdbDoubleArray)hd;
-        for(int j=0;j<hda.getValue().length;j++) {
-          System.out.println("    #"+j+" "+hda.getValue()[j]);
-        }
-      }
+//      if( hd.getType() == HdbSigInfo.TYPE_ARRAY_DOUBLE_RO ) {
+//        HdbDoubleArray hda = (HdbDoubleArray)hd;
+//        for(int j=0;j<hda.getValue().length;j++) {
+//          System.out.println("    #"+j+" "+hda.getValue()[j]);
+//        }
+//      }
 
     }
 

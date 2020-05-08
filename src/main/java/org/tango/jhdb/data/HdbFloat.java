@@ -40,17 +40,29 @@ import java.util.ArrayList;
 /**
  * HDB float data
  */
-public class HdbFloat extends HdbData {
+public class HdbFloat extends HdbScalarData {
 
   float value = Float.NaN;
   float wvalue = Float.NaN;
 
-  public HdbFloat(int type) {
-    this.type = type;
+  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  {
+    switch (info.format)
+    {
+      case SCALAR:
+        return new HdbFloat(info);
+      case SPECTRUM:
+        return new HdbFloatArray(info);
+      default:
+        throw new HdbFailed("Format :" + info.format + " not supported.");
+    }
+  }
+  public HdbFloat(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbFloat(int type,float value) {
-    this.type = type;
+  public HdbFloat(HdbSigInfo info, float value) {
+    this(info);
     this.value = value;
   }
 
@@ -114,34 +126,11 @@ public class HdbFloat extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_SCALAR_FLOAT_RO)
-      return timeToStr(dataTime)+": "+Double.toString(value)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": "+Double.toString(value)+";"+Double.toString(wvalue)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     value = (float)(value * f);
     wvalue = (float)(wvalue * f);
   }
-  int dataSize() {
-    return 1;
-  }
-  int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
-      return 1;
-    else
-      return 0;
-  }
-
 
   void copyData(HdbData src) {
     this.value = ((HdbFloat)src).value;
@@ -187,13 +176,6 @@ public class HdbFloat extends HdbData {
     }
   }
 
-  public double[] getValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
-
-  public double[] getWriteValueAsDoubleArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an array");
-  }
   public long getValueAsLong() throws HdbFailed {
     throw new HdbFailed("This datum is not an integer");
   }
@@ -201,13 +183,4 @@ public class HdbFloat extends HdbData {
   public long getWriteValueAsLong() throws HdbFailed {
     throw new HdbFailed("This datum is not an integer");
   }
-
-  public long[] getValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an integer");
-  }
-
-  public long[] getWriteValueAsLongArray() throws HdbFailed {
-    throw new HdbFailed("This datum is not an integer");
-  }
-
 }

@@ -38,20 +38,20 @@ import org.tango.jhdb.HdbSigInfo;
 import java.util.ArrayList;
 
 /**
- * HDB double array data
+ * HDB float array data
  */
-public class HdbFloatArray extends HdbData {
+public class HdbFloatArray extends HdbArrayData {
 
   float[] value = null;
   float[] wvalue = null;
 
-  public HdbFloatArray(int type) {
-    this.type = type;
+  public HdbFloatArray(HdbSigInfo info) {
+    super(info);
   }
 
-  public HdbFloatArray(int type,float[] value) {
-    this.type = type;
-    this.value = value;
+  public HdbFloatArray(HdbSigInfo info, float[] value) {
+    this(info);
+    this.value = value.clone();
   }
 
   public float[] getValue() throws HdbFailed {
@@ -120,19 +120,6 @@ public class HdbFloatArray extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_ARRAY_FLOAT_RO)
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+","+Integer.toString(wvalue.length)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     for(int i=0;i<dataSize();i++)
@@ -147,7 +134,7 @@ public class HdbFloatArray extends HdbData {
       return value.length;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       if(wvalue==null)
         return 0;
       else
@@ -192,14 +179,6 @@ public class HdbFloatArray extends HdbData {
     return ret.toString();
   }
 
-  public double getValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public double getWriteValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
   public double[] getValueAsDoubleArray() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -218,14 +197,6 @@ public class HdbFloatArray extends HdbData {
     for(int i=0;i<wvalue.length;i++)
       ret[i] = (double)wvalue[i];
     return ret;
-  }
-
-  public long getValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not an integer");
-  }
-
-  public long getWriteValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not an integer");
   }
 
   public long[] getValueAsLongArray() throws HdbFailed {
