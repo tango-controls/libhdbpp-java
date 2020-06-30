@@ -269,7 +269,7 @@ public class MySQLSchema extends HdbReader {
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
     attName = ret.name;
 
     String query = "SELECT att_conf.att_conf_id,att_conf_data_type.data_type FROM att_conf,att_conf_data_type WHERE " +
@@ -292,11 +292,11 @@ public class MySQLSchema extends HdbReader {
       throw new HdbFailed("Failed to retrieve signal id: "+e.getMessage());
     }
 
-    return ret;
+    return new HdbSigInfo(ret);
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String start_date,
                            String stop_date) throws HdbFailed {
 
@@ -313,7 +313,7 @@ public class MySQLSchema extends HdbReader {
 
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     String query = "SELECT recv_time,insert_time,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
@@ -366,11 +366,11 @@ public class MySQLSchema extends HdbReader {
   public ArrayList<HdbSigParam> getParams(String attName,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getParams(sigInfo,start_date,stop_date);
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
 
@@ -434,7 +434,7 @@ public class MySQLSchema extends HdbReader {
 
   // ---------------------------------------------------------------------------------------
 
-  private HdbDataSet getArrayData(HdbSigInfo info,
+  private HdbDataSet getArrayData(SignalInfo info,
                                   String sigId,
                                   String start_date,
                                   String stop_date) throws HdbFailed {
@@ -575,7 +575,7 @@ public class MySQLSchema extends HdbReader {
 
   // ---------------------------------------------------------------------------------------
 
-  private HdbDataSet getScalarData(HdbSigInfo info,
+  private HdbDataSet getScalarData(SignalInfo info,
                                    String sigId,
                                    String start_date,
                                    String stop_date) throws HdbFailed {

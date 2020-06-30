@@ -87,7 +87,7 @@ public abstract class HdbReader {
     if(attName==null)
       throw new HdbFailed("attName input parameters is null");
 
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getData(sigInfo, startDate, stopDate);
 
   }
@@ -117,7 +117,7 @@ public abstract class HdbReader {
    *
    * @throws HdbFailed In case of failure
    */
-  public HdbDataSet getData(HdbSigInfo sigInfo,
+  public HdbDataSet getData(SignalInfo sigInfo,
                             String startDate,
                             String stopDate) throws HdbFailed {
 
@@ -128,7 +128,7 @@ public abstract class HdbReader {
   }
 
 
-  abstract HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  abstract HdbDataSet getDataFromDB(SignalInfo sigInfo,
                                     String startDate,
                                     String stopDate) throws HdbFailed;
   /**
@@ -149,7 +149,7 @@ public abstract class HdbReader {
     if(attNames==null)
       throw new HdbFailed("getData(): attNames input parameters is null");
 
-    HdbSigInfo[] sigInfos = new HdbSigInfo[attNames.length];
+    SignalInfo[] sigInfos = new SignalInfo[attNames.length];
     for(int i=0;i<sigInfos.length;i++)
       sigInfos[i] = getSigInfo(attNames[i]);
 
@@ -167,7 +167,7 @@ public abstract class HdbReader {
    *
    * @throws HdbFailed In case of failure
    */
-  public HdbDataSet[] getData(HdbSigInfo[] sigInfos,
+  public HdbDataSet[] getData(SignalInfo[] sigInfos,
                               String startDate,
                               String stopDate,
                               int extractMode) throws HdbFailed {
@@ -249,7 +249,7 @@ public abstract class HdbReader {
    * @return The signal identifier
    * @throws HdbFailed In case of failure
    */
-  public HdbSigInfo getSigInfo(String attName,int queryMode) throws HdbFailed {
+  public HdbSigInfo getSigInfo(String attName, int queryMode) throws HdbFailed {
     HdbSigInfo ret = getSigInfo(attName);
     if( queryMode != HdbSigParam.QUERY_DATA ) {
       ret.queryConfig = queryMode;
@@ -272,7 +272,7 @@ public abstract class HdbReader {
                                                    String startDate,
                                                    String stopDate) throws HdbFailed;
 
-  public abstract ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public abstract ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                                    String startDate,
                                                    String stopDate) throws HdbFailed;
 
@@ -283,7 +283,7 @@ public abstract class HdbReader {
    * @return
    */
   public HdbSigParam getLastParam(String attName) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getLastParam(sigInfo);
   }
 
@@ -293,7 +293,7 @@ public abstract class HdbReader {
    * @param sigInfo Signal info
    * @return
    */
-  public abstract HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed;
+  public abstract HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed;
 
   /**
    * This method finds the errors occurred inside a time interval for the specified attribute
@@ -420,9 +420,9 @@ public abstract class HdbReader {
   }
 
   // Prepare SigInfo
-  HdbSigInfo prepareSigInfo(String attName) throws HdbFailed {
+  SignalInfo prepareSigInfo(String attName) throws HdbFailed {
 
-    HdbSigInfo ret = new HdbSigInfo();
+    SignalInfo ret = new SignalInfo();
     ret.name = attName;
 
     if(!attName.startsWith("tango://"))
@@ -433,7 +433,7 @@ public abstract class HdbReader {
   }
 
   // Fetch data
-  private HdbDataSet getDataPrivate(HdbSigInfo sigInfo,
+  private HdbDataSet getDataPrivate(SignalInfo sigInfo,
                                     String startDate,
                                     String stopDate) throws HdbFailed {
 

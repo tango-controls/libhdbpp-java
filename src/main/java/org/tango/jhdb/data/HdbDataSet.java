@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -44,7 +44,7 @@ public class HdbDataSet {
 
   ArrayList<HdbData> data;
   String name;
-  HdbSigInfo info;
+  SignalInfo info;
   long invalidValue=Long.MIN_VALUE;
 
   /**
@@ -67,7 +67,7 @@ public class HdbDataSet {
    * Set the type of this dataset
    * @param info Type
    */
-  public void setSigInfo(HdbSigInfo info) {
+  public void setSigInfo(SignalInfo info) {
     this.info = info;
   }
 
@@ -75,7 +75,7 @@ public class HdbDataSet {
    * Get the name of this dataset
    * @return
    */
-  public HdbSigInfo getSigInfo() {
+  public SignalInfo getSigInfo() {
     return info;
   }
 

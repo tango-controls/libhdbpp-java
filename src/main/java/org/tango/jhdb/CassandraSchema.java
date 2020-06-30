@@ -122,7 +122,7 @@ public class CassandraSchema extends HdbReader {
   private final static int  MAX_ASYNCH_CALL = 6;
 
   // Prepared queries for getting data
-  private static HashMap<HdbSigInfo, PreparedStatement> prepQueries = new HashMap<>();
+  private static HashMap<SignalInfo, PreparedStatement> prepQueries = new HashMap<SignalInfo, PreparedStatement>();
 
 
   public CassandraSchema(String[] contacts,String db,String user,String passwd) throws HdbFailed {
@@ -202,7 +202,7 @@ public class CassandraSchema extends HdbReader {
     cluster.close();
   }
 
-  private PreparedStatement getPreparedQuery(HdbSigInfo info, boolean fullPeriod) throws HdbFailed {
+  private PreparedStatement getPreparedQuery(SignalInfo info, boolean fullPeriod) throws HdbFailed {
 
     //int statementIdx = (fullPeriod?2*type+1:2*type);
 
@@ -356,7 +356,7 @@ public class CassandraSchema extends HdbReader {
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
 
     attName = ret.name.substring(8);
     String[] fields = attName.split("/");
@@ -387,7 +387,7 @@ public class CassandraSchema extends HdbReader {
       throw new HdbFailed(e.getMessage());
     }
 
-    return ret;
+    return new HdbSigInfo(ret);
 
   }
 
@@ -397,7 +397,7 @@ public class CassandraSchema extends HdbReader {
     throw new HdbFailed("Not implemented");
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     String query = "SELECT recv_time,recv_time_us,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
@@ -450,11 +450,11 @@ public class CassandraSchema extends HdbReader {
   public ArrayList<HdbSigParam> getParams(String attName,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getParams(sigInfo,start_date,stop_date);
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
 
@@ -509,7 +509,7 @@ public class CassandraSchema extends HdbReader {
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String start_date,
                            String stop_date) throws HdbFailed {
 

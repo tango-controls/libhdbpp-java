@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -45,7 +45,7 @@ public class HdbUChar extends HdbScalarData {
   short value = 0;
   short wvalue = 0;
 
-  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  public static HdbData createData(SignalInfo info) throws HdbFailed
   {
     switch (info.format)
     {
@@ -57,11 +57,11 @@ public class HdbUChar extends HdbScalarData {
         throw new HdbFailed("Format :" + info.format + " not supported.");
     }
   }
-  public HdbUChar(HdbSigInfo info) {
+  public HdbUChar(SignalInfo info) {
     super(info);
   }
 
-  public HdbUChar(HdbSigInfo info, short value, short wvalue)  {
+  public HdbUChar(SignalInfo info, short value, short wvalue)  {
     this(info);
     this.value = value;
     this.wvalue = wvalue;

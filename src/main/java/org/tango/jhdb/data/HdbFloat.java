@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -45,7 +45,7 @@ public class HdbFloat extends HdbScalarData {
   float value = Float.NaN;
   float wvalue = Float.NaN;
 
-  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  public static HdbData createData(SignalInfo info) throws HdbFailed
   {
     switch (info.format)
     {
@@ -57,11 +57,11 @@ public class HdbFloat extends HdbScalarData {
         throw new HdbFailed("Format :" + info.format + " not supported.");
     }
   }
-  public HdbFloat(HdbSigInfo info) {
+  public HdbFloat(SignalInfo info) {
     super(info);
   }
 
-  public HdbFloat(HdbSigInfo info, float value) {
+  public HdbFloat(SignalInfo info, float value) {
     this(info);
     this.value = value;
   }

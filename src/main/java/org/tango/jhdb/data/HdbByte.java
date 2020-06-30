@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -45,7 +45,7 @@ public class HdbByte extends HdbScalarData {
   byte value = 0;
   byte wvalue = 0;
 
-  public static HdbData createData(HdbSigInfo info) throws HdbFailed
+  public static HdbData createData(SignalInfo info) throws HdbFailed
   {
     switch (info.format)
     {
@@ -58,16 +58,16 @@ public class HdbByte extends HdbScalarData {
     }
   }
 
-  public HdbByte(HdbSigInfo info) {
+  public HdbByte(SignalInfo info) {
     super(info);
   }
 
-  public HdbByte(HdbSigInfo info, byte value) {
+  public HdbByte(SignalInfo info, byte value) {
     this(info);
     this.value = value;
   }
 
-  public HdbByte(HdbSigInfo info, byte value, byte wval) {
+  public HdbByte(SignalInfo info, byte value, byte wval) {
     this(info);
     this.value = value;
     this.wvalue = wval;

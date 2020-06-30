@@ -1,7 +1,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -13,11 +13,11 @@ public class HdbLong64Array extends HdbArrayData {
   long[] value = null;
   long[] wvalue = null;
 
-  public HdbLong64Array(HdbSigInfo info) {
+  public HdbLong64Array(SignalInfo info) {
     super(info);
   }
 
-  public HdbLong64Array(HdbSigInfo info, long[] value) {
+  public HdbLong64Array(SignalInfo info, long[] value) {
     this(info);
     this.value = value.clone();
   }

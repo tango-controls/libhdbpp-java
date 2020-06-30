@@ -34,7 +34,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,14 +47,14 @@ public abstract class HdbData {
 
   final static SimpleDateFormat dfr = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
-  public HdbSigInfo info;
+  public SignalInfo info;
   long   dataTime;
   long   recvTime;
   long   insertTime;
   int    qualityFactor;
   String errorMessage=null;
 
-  public HdbData(HdbSigInfo info)
+  public HdbData(SignalInfo info)
   {
     this.info = info;
   }
@@ -359,7 +359,7 @@ public abstract class HdbData {
    * @param info Data type
    * @throws HdbFailed In case of failure
    */
-  public static HdbData createData(HdbSigInfo info) throws HdbFailed {
+  public static HdbData createData(SignalInfo info) throws HdbFailed {
       switch (info.dataType) {
         case DOUBLE:
           return HdbDouble.createData(info);

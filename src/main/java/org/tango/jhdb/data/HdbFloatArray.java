@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -45,11 +45,11 @@ public class HdbFloatArray extends HdbArrayData {
   float[] value = null;
   float[] wvalue = null;
 
-  public HdbFloatArray(HdbSigInfo info) {
+  public HdbFloatArray(SignalInfo info) {
     super(info);
   }
 
-  public HdbFloatArray(HdbSigInfo info, float[] value) {
+  public HdbFloatArray(SignalInfo info, float[] value) {
     this(info);
     this.value = value.clone();
   }

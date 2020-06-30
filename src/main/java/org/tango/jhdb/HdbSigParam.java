@@ -49,9 +49,9 @@ public class HdbSigParam {
   public String archive_abs_change;
   public String archive_period;
   public String description;
-  private HdbSigInfo info;
+  private SignalInfo info;
 
-  public HdbSigParam(HdbSigInfo info)
+  public HdbSigParam(SignalInfo info)
   {
     this.info = info;
   }
@@ -72,7 +72,7 @@ public class HdbSigParam {
    * @return HdbData corresponding to mode
    * @throws HdbFailed In case of failure
    */
-  public static HdbSigInfo.Type getType(int mode) throws HdbFailed {
+  public static SignalInfo.Type getType(int mode) throws HdbFailed {
 
     switch (mode) {
       case QUERY_CFG_ALL:
@@ -80,19 +80,19 @@ public class HdbSigParam {
       case QUERY_CFG_UNIT:
       case QUERY_CFG_FORMAT:
       case QUERY_CFG_DESCRIPTION:
-        return HdbSigInfo.Type.STRING;
+        return SignalInfo.Type.STRING;
       case QUERY_CFG_DISPLAY_UNIT:
       case QUERY_CFG_STANDARD_UNIT:
       case QUERY_CFG_ARCH_REL_CHANGE:
       case QUERY_CFG_ARCH_ABS_CHANGE:
       case QUERY_CFG_ARCH_PERIOD:
-        return HdbSigInfo.Type.DOUBLE;
+        return SignalInfo.Type.DOUBLE;
       default:
         throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
     }
   }
 
-  public static HdbSigInfo.Access getAccess(int mode) throws HdbFailed {
+  public static SignalInfo.Access getAccess(int mode) throws HdbFailed {
 
     switch (mode) {
       case QUERY_CFG_ALL:
@@ -105,16 +105,16 @@ public class HdbSigParam {
       case QUERY_CFG_ARCH_ABS_CHANGE:
       case QUERY_CFG_ARCH_PERIOD:
       case QUERY_CFG_DESCRIPTION:
-        return HdbSigInfo.Access.RO;
+        return SignalInfo.Access.RO;
       default:
         throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
     }
   }
 
-  public static HdbSigInfo.Format getFormat(int mode) throws HdbFailed {
+  public static SignalInfo.Format getFormat(int mode) throws HdbFailed {
     switch (mode) {
       case QUERY_CFG_ALL:
-        return HdbSigInfo.Format.SPECTRUM;
+        return SignalInfo.Format.SPECTRUM;
       case QUERY_CFG_LABEL:
       case QUERY_CFG_UNIT:
       case QUERY_CFG_DISPLAY_UNIT:
@@ -124,7 +124,7 @@ public class HdbSigParam {
       case QUERY_CFG_ARCH_ABS_CHANGE:
       case QUERY_CFG_ARCH_PERIOD:
       case QUERY_CFG_DESCRIPTION:
-        return HdbSigInfo.Format.SCALAR;
+        return SignalInfo.Format.SCALAR;
       default:
         throw new HdbFailed("HdbSigParam.convert() Invalid mode for conversion");
     }

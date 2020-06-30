@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ import java.util.Map;
  */
 public abstract class HdbScalarData extends HdbData {
 
-  public HdbScalarData(HdbSigInfo info) {
+  public HdbScalarData(SignalInfo info) {
     super(info);
   }
 

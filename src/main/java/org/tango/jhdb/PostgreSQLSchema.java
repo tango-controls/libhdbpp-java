@@ -48,37 +48,37 @@ public class PostgreSQLSchema extends HdbReader {
   public static final String DEFAULT_DB_URL_PREFIX = "jdbc:postgresql://";
   public static final int    DEFAULT_DB_PORT = 5432;
 
-  private static final HashMap<Integer, HdbSigInfo.Access> INT_TO_ACCESS = new HashMap<>();
-  private static final HashMap<Integer, HdbSigInfo.Format> INT_TO_FORMAT = new HashMap<>();
-  private static final HashMap<Integer, HdbSigInfo.Type> INT_TO_TYPE = new HashMap<>();
+  private static final HashMap<Integer, SignalInfo.Access> INT_TO_ACCESS = new HashMap<>();
+  private static final HashMap<Integer, SignalInfo.Format> INT_TO_FORMAT = new HashMap<>();
+  private static final HashMap<Integer, SignalInfo.Type> INT_TO_TYPE = new HashMap<>();
 
   static {
-    INT_TO_ACCESS.put(0, HdbSigInfo.Access.RO);
-    INT_TO_ACCESS.put(2, HdbSigInfo.Access.WO);
-    INT_TO_ACCESS.put(3, HdbSigInfo.Access.RW);
+    INT_TO_ACCESS.put(0, SignalInfo.Access.RO);
+    INT_TO_ACCESS.put(2, SignalInfo.Access.WO);
+    INT_TO_ACCESS.put(3, SignalInfo.Access.RW);
 
-    INT_TO_FORMAT.put(0, HdbSigInfo.Format.SCALAR);
-    INT_TO_FORMAT.put(1, HdbSigInfo.Format.SPECTRUM);
-    INT_TO_FORMAT.put(2, HdbSigInfo.Format.IMAGE);
+    INT_TO_FORMAT.put(0, SignalInfo.Format.SCALAR);
+    INT_TO_FORMAT.put(1, SignalInfo.Format.SPECTRUM);
+    INT_TO_FORMAT.put(2, SignalInfo.Format.IMAGE);
 
-    INT_TO_TYPE.put(1, HdbSigInfo.Type.BOOLEAN);
-    INT_TO_TYPE.put(2, HdbSigInfo.Type.SHORT);
-    INT_TO_TYPE.put(3, HdbSigInfo.Type.LONG);
-    INT_TO_TYPE.put(4, HdbSigInfo.Type.FLOAT);
-    INT_TO_TYPE.put(5, HdbSigInfo.Type.DOUBLE);
-    INT_TO_TYPE.put(6, HdbSigInfo.Type.USHORT);
-    INT_TO_TYPE.put(7, HdbSigInfo.Type.ULONG);
-    INT_TO_TYPE.put(8, HdbSigInfo.Type.STRING);
-    INT_TO_TYPE.put(19, HdbSigInfo.Type.STATE);
-    INT_TO_TYPE.put(22, HdbSigInfo.Type.UCHAR);
-    INT_TO_TYPE.put(23, HdbSigInfo.Type.LONG64);
-    INT_TO_TYPE.put(24, HdbSigInfo.Type.ULONG64);
-    INT_TO_TYPE.put(28, HdbSigInfo.Type.ENCODED);
-    INT_TO_TYPE.put(30, HdbSigInfo.Type.ENUM);
+    INT_TO_TYPE.put(1, SignalInfo.Type.BOOLEAN);
+    INT_TO_TYPE.put(2, SignalInfo.Type.SHORT);
+    INT_TO_TYPE.put(3, SignalInfo.Type.LONG);
+    INT_TO_TYPE.put(4, SignalInfo.Type.FLOAT);
+    INT_TO_TYPE.put(5, SignalInfo.Type.DOUBLE);
+    INT_TO_TYPE.put(6, SignalInfo.Type.USHORT);
+    INT_TO_TYPE.put(7, SignalInfo.Type.ULONG);
+    INT_TO_TYPE.put(8, SignalInfo.Type.STRING);
+    INT_TO_TYPE.put(19, SignalInfo.Type.STATE);
+    INT_TO_TYPE.put(22, SignalInfo.Type.UCHAR);
+    INT_TO_TYPE.put(23, SignalInfo.Type.LONG64);
+    INT_TO_TYPE.put(24, SignalInfo.Type.ULONG64);
+    INT_TO_TYPE.put(28, SignalInfo.Type.ENCODED);
+    INT_TO_TYPE.put(30, SignalInfo.Type.ENUM);
   }
 
 
-  private static HashMap<HdbSigInfo, PreparedStatement> prepQueries = new HashMap<>();
+  private static HashMap<SignalInfo, PreparedStatement> prepQueries = new HashMap<>();
 
   // Notify every PROGRESS_NBROW rows
   private final static int PROGRESS_NBROW =10000;
@@ -252,7 +252,7 @@ public class PostgreSQLSchema extends HdbReader {
 
     connectionCheck();
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
     attName = ret.name;
     String query = "SELECT att_conf_id, table_name, write_num, type_num, format_num " +
             "FROM att_conf join att_conf_format on (att_conf.att_conf_format_id=att_conf_format.att_conf_format_id) " +
@@ -266,9 +266,9 @@ public class PostgreSQLSchema extends HdbReader {
       if(resultSet.next()) {
         ret.sigId = resultSet.getString(1);
         ret.tableName = resultSet.getString(2);
-        ret.access = INT_TO_ACCESS.getOrDefault(resultSet.getInt(3), HdbSigInfo.Access.UNKNOWN);
-        ret.dataType = INT_TO_TYPE.getOrDefault(resultSet.getInt(4), HdbSigInfo.Type.UNKNOWN);
-        ret.format = INT_TO_FORMAT.getOrDefault(resultSet.getInt(5), HdbSigInfo.Format.UNKNOWN);
+        ret.access = INT_TO_ACCESS.getOrDefault(resultSet.getInt(3), SignalInfo.Access.UNKNOWN);
+        ret.dataType = INT_TO_TYPE.getOrDefault(resultSet.getInt(4), SignalInfo.Type.UNKNOWN);
+        ret.format = INT_TO_FORMAT.getOrDefault(resultSet.getInt(5), SignalInfo.Format.UNKNOWN);
       } else {
         throw new HdbFailed("Signal not found");
       }
@@ -277,11 +277,11 @@ public class PostgreSQLSchema extends HdbReader {
       throw new HdbFailed("Failed to retrieve signal id: "+e.getMessage());
     }
 
-    return ret;
+    return new HdbSigInfo(ret);
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String start_date,
                            String stop_date) throws HdbFailed {
 
@@ -291,7 +291,7 @@ public class PostgreSQLSchema extends HdbReader {
     checkDates(start_date, stop_date);
 
     boolean isRW = sigInfo.isRW();
-    boolean isWO = sigInfo.access == HdbSigInfo.Access.WO;
+    boolean isWO = sigInfo.access == SignalInfo.Access.WO;
 
     String query;
     int queryCount = 0;
@@ -430,7 +430,7 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     connectionCheck();
 
@@ -485,11 +485,11 @@ public class PostgreSQLSchema extends HdbReader {
   public ArrayList<HdbSigParam> getParams(String attName,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getParams(sigInfo,start_date,stop_date);
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
 

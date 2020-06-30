@@ -204,7 +204,7 @@ public class OracleSchema extends HdbReader {
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String startDate,
                            String stopDate) throws HdbFailed {
 
@@ -346,7 +346,7 @@ public class OracleSchema extends HdbReader {
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
     attName = ret.name.substring(6).toLowerCase();
 
     HdbSignal s = new HdbSignal(connection);
@@ -441,7 +441,7 @@ public class OracleSchema extends HdbReader {
 
       }
 
-      return ret;
+      return new HdbSigInfo(ret);
 
     } catch (Exception e) {
       throw new HdbFailed("tacoHDB.HdbSignal.getDefinition() failed.\n" + attName + "\n" + e.getMessage());
@@ -449,7 +449,7 @@ public class OracleSchema extends HdbReader {
 
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     // We do not have this information in the DB
     // Got it from Tango
@@ -491,7 +491,7 @@ public class OracleSchema extends HdbReader {
     throw new HdbFailed("getParams() not supported on Oracle HDB");
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo, String startDate, String stopDate) throws HdbFailed {
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo, String startDate, String stopDate) throws HdbFailed {
     throw new HdbFailed("getParams() not supported on Oracle HDB");
   }
 
