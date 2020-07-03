@@ -39,6 +39,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.List;
 
 /**
  * PostgreSQL database access
@@ -564,6 +565,76 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  private void convertDoubleArray(ArrayList<Double> v,Array a) throws SQLException {
+
+    if(a!=null) {
+      Double[] objects = (Double[]) a.getArray();
+      for(int i=0;i<objects.length;i++) {
+        v.add(objects[i]);
+      }
+    }
+
+  }
+
+  private void convertNumberArray(ArrayList<Number> v,Array a, HdbSigInfo.Type type) throws SQLException {
+    if(a!=null) {
+      Number[] numbers;
+      switch(type) {
+        case FLOAT:
+        case DOUBLE:
+        case LONG:
+        case LONG64:
+        case SHORT:
+        case ULONG:
+        case ULONG64:
+        case USHORT:
+          numbers = (Number[]) a.getArray();
+          break;
+        default:
+          numbers = new Number[0];
+      }
+      for (int i = 0; i < numbers.length; i++) {
+        v.add(numbers[i]);
+      }
+    }
+  }
+
+  private void convertLongArray(ArrayList<Long> v,Array a) throws SQLException {
+
+    if(a!=null) {
+      Long[] objects = (Long[]) a.getArray();
+      for(int i=0;i<objects.length;i++) {
+        v.add(objects[i]);
+      }
+    }
+
+  }
+
+  private Number extractNumber(ResultSet rs, int index, HdbSigInfo.Type type) throws SQLException {
+    if(rs!=null) {
+      switch(type) {
+        case FLOAT:
+          return rs.getFloat(index);
+        case DOUBLE:
+          return rs.getDouble(index);
+        case LONG:
+          return rs.getInt(index);
+        case LONG64:
+          return rs.getLong(index);
+        case SHORT:
+          return rs.getShort(index);
+        case ULONG:
+          return rs.getLong(index);
+        case ULONG64:
+          return rs.getLong(index);
+        case USHORT:
+          return rs.getInt(index);
+        default:
+      }
+    }
+    return Double.NaN;
+  }
+
   private long timeValue(Timestamp ts) {
 
     if(ts==null)
@@ -596,11 +667,8 @@ public class PostgreSQLSchema extends HdbReader {
     }
 
     String[] ret = new String[list.size()];
-    for(int i=0;i<ret.length;i++)
-      ret[i] = list.get(i);
 
-    return ret;
-
+    return list.toArray(ret);
   }
 
   private String toDBDate(String date) {
@@ -612,4 +680,168 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  @Override
+  public boolean isFeatureSupported(Feature feat)
+  {
+    switch(feat)
+    {
+      case AGGREGATES:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
+  protected HdbDataSet[] getDataAggregateFromDB(List<SignalInput> inputs) throws HdbFailed
+  {
+    HdbDataSet[] ret = new HdbDataSet[inputs.size()];
+    int idx = 0;
+    for(SignalInput input : inputs)
+    {
+      ArrayList<HdbData> data = new ArrayList<>();
+      PreparedStatement statement;
+      if(!prepQueries.containsKey(input.info)) {
+        String tablename = "cagg_" + input.info.tableName.substring(4) + "_" + input.info.interval.toString();
+        String query;
+        switch (input.info.dataType) {
+          case DOUBLE:
+          case FLOAT:
+            query = "SELECT data_time, count_rows, count_errors, count_r, count_nan_r, mean_r, min_r, max_r, stddev_r" +
+                    ", count_w, count_nan_w, mean_w, min_w, max_w, stddev_w" +
+                    " FROM " + tablename +
+                    " WHERE att_conf_id= ?" +
+                    " AND data_time>= ?" +
+                    " AND data_time<= ?" +
+                    " ORDER BY data_time ASC";
+            break;
+          case LONG:
+          case ULONG:
+          case LONG64:
+          case ULONG64:
+          case SHORT:
+          case USHORT:
+            query = "SELECT data_time, count_rows, count_errors, count_r, mean_r, min_r, max_r, stddev_r" +
+                    ", count_w, mean_w, min_w, max_w, stddev_w" +
+                    " FROM " + tablename +
+                    " WHERE att_conf_id= ?" +
+                    " AND data_time>= ?" +
+                    " AND data_time<= ?" +
+                    " ORDER BY data_time ASC";
+            break;
+          default:
+            throw new HdbFailed("Aggregates are not supported for type: " + input.info.dataType);
+        }
+
+        try {
+          prepQueries.put(input.info, connection.prepareStatement(query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY));
+        } catch (SQLException e) {
+          throw new HdbFailed("An error occured upon query preparation for query: " + query);
+        }
+      }
+      statement = prepQueries.get(input.info);
+      try
+      {
+        statement.setInt(1, Integer.parseInt(input.info.sigId));
+        statement.setTimestamp(2, Timestamp.valueOf(toDBDate(input.startDate)));
+        statement.setTimestamp(3, Timestamp.valueOf(toDBDate(input.endDate)));
+        ResultSet rs = statement.executeQuery();
+
+        boolean isFloating = input.info.dataType == HdbSigInfo.Type.DOUBLE || input.info.dataType == HdbSigInfo.Type.FLOAT;
+        boolean isArray = input.info.isArray();
+        int floatingOffset1 = 0;
+        int floatingOffset2 = 0;
+        if(!isFloating)
+        {
+          floatingOffset1 = 1;
+          floatingOffset2 = 2;
+        }
+
+        long dTime = 0;
+        long count_rows;
+        long count_errors;
+
+        while (rs.next()) {
+          ArrayList<Long> count_r = new ArrayList<>();
+          ArrayList<Long> count_nan_r = new ArrayList<>();
+          ArrayList<Double> mean_r = new ArrayList<>();
+          ArrayList<Number> min_r = new ArrayList<>();
+          ArrayList<Number> max_r = new ArrayList<>();
+          ArrayList<Double> stddev_r = new ArrayList<>();
+          ArrayList<Long> count_w = new ArrayList<>();
+          ArrayList<Long> count_nan_w = new ArrayList<>();
+          ArrayList<Double> mean_w = new ArrayList<>();
+          ArrayList<Number> min_w = new ArrayList<>();
+          ArrayList<Number> max_w = new ArrayList<>();
+          ArrayList<Double> stddev_w = new ArrayList<>();
+          dTime = timeValue(rs.getTimestamp(1));
+          count_rows = rs.getLong(2);
+          count_errors = rs.getLong(3);
+          if (isArray) {
+            convertLongArray(count_r, rs.getArray(4));
+            convertDoubleArray(mean_r, rs.getArray(6 - floatingOffset1));
+            convertNumberArray(min_r, rs.getArray(7 - floatingOffset1), input.info.dataType);
+            convertNumberArray(max_r, rs.getArray(8 - floatingOffset1), input.info.dataType);
+            convertDoubleArray(stddev_r, rs.getArray(9 - floatingOffset1));
+            convertLongArray(count_w, rs.getArray(10 - floatingOffset1));
+            convertDoubleArray(mean_w, rs.getArray(12 - floatingOffset2));
+            convertNumberArray(min_w, rs.getArray(13 - floatingOffset2), input.info.dataType);
+            convertNumberArray(max_w, rs.getArray(14 - floatingOffset2), input.info.dataType);
+            convertDoubleArray(stddev_w, rs.getArray(15 - floatingOffset2));
+            if(isFloating)
+            {
+              convertLongArray(count_nan_r, rs.getArray(5));
+              convertLongArray(count_nan_w, rs.getArray(11));
+            }
+          }
+          else
+          {
+            count_r.add(rs.getLong(4));
+            mean_r.add(rs.getDouble(6 - floatingOffset1));
+            min_r.add(extractNumber(rs, 7 - floatingOffset1, input.info.dataType));
+            max_r.add(extractNumber(rs, 8 - floatingOffset1, input.info.dataType));
+            stddev_r.add(rs.getDouble(9 - floatingOffset1));
+            count_w.add(rs.getLong(10 - floatingOffset1));
+            mean_w.add(rs.getDouble(12 - floatingOffset2));
+            min_w.add(extractNumber(rs, 13-floatingOffset2, input.info.dataType));
+            max_w.add(extractNumber(rs, 14-floatingOffset2, input.info.dataType));
+            stddev_w.add(rs.getDouble(15 - floatingOffset2));
+            if(isFloating) {
+              count_nan_r.add(rs.getLong(5));
+              count_nan_w.add(rs.getLong(11));
+            }
+          }
+
+          HdbData hd = HdbData.createData(input.info);
+
+          hd.parseAggregate(
+                  dTime,     //Tango timestamp
+                  count_rows,
+                  count_errors,
+                  count_r,
+                  count_nan_r,
+                  mean_r,
+                  min_r,
+                  max_r,
+                  stddev_r,
+                  count_w,
+                  count_nan_w,
+                  mean_w,
+                  min_w,
+                  max_w,
+                  stddev_w
+          );
+
+          data.add(hd);
+        }
+        statement.close();
+      }
+      catch (SQLException e)
+      {
+        throw new HdbFailed("An error occured while querying the database:\n" + e.getMessage());
+      }
+      ret[idx++] = new HdbDataSet(data);
+    }
+    return ret;
+  }
 }

@@ -39,6 +39,7 @@ import org.tango.jhdb.data.HdbDataSet;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * This class provides the main methods to retrieve data from HDB.
@@ -47,15 +48,60 @@ import java.util.Date;
  * @author JL Pons
  */
 public abstract class HdbReader {
+    /**
+     * All the features that could be supported by this reader.
+     */
+    public static enum Feature
+    {
+          AGGREGATES
+    }
 
-  /** Normal extraction mode */
-  public final static int MODE_NORMAL = 0;
-  /** Extract data and ignore errors (all HdbData which has failed are removed) */
-  public final static int MODE_IGNORE_ERROR = 1;
-  /** Filling gaps by correlating to the last known value of the HdbDataSet */
-  public final static int MODE_FILLED = 2;
-  /** Correlate all HdbDataSet to the HdbDataSet which have the lowest number of data */
-  public final static int MODE_CORRELATED = 3;
+    /**
+     * Extraction mode to be used when retrieving the data.
+     * Keep a string representation to be displayed in any UI elements.
+     */
+    public static enum ExtractMode {
+        /**
+         * Normal extraction mode
+         */
+        MODE_NORMAL("Normal"),
+        /**
+         * Extract data and ignore errors (all HdbData which has failed are removed)
+         */
+        MODE_IGNORE_ERROR("Ignore errors"),
+        /**
+         * Filling gaps by correlating to the last known value of the HdbDataSet
+         */
+        MODE_FILLED("Filled"),
+        /**
+         * Correlate all HdbDataSet to the HdbDataSet which have the lowest number of data
+         */
+        MODE_CORRELATED("Correlated");
+
+        private final String representation;
+
+        ExtractMode(String rep)
+        {
+            representation = rep;
+        }
+
+        public String toString()
+        {
+            return representation;
+        }
+    }
+
+    /**
+     * Input for the libhdbpp-java.
+     * Contains an HdbSigInfo, with all the information about the signal to be queried,
+     * and the start and end date for the data to be fetched.
+     */
+    public static class SignalInput
+    {
+        public HdbSigInfo info;
+        public String startDate;
+        public String endDate;
+    }
 
   private long extraPointLookupPeriod = 3600;
   private boolean extraPointEnabled = false;
@@ -185,18 +231,18 @@ public abstract class HdbReader {
     }
 
     // Remove hasFailed
-    if(extractMode==MODE_IGNORE_ERROR ||
-       extractMode==MODE_CORRELATED ||
-       extractMode==MODE_FILLED) {
+    if(extractMode==ExtractMode.MODE_IGNORE_ERROR.ordinal() ||
+       extractMode==ExtractMode.MODE_CORRELATED.ordinal() ||
+       extractMode==ExtractMode.MODE_FILLED.ordinal()) {
       for(int i=0;i<ret.length;i++)
         ret[i].removeHasFailed();
     }
 
     // Correlated mode
-    if(extractMode==MODE_CORRELATED && ret.length>1)
+    if(extractMode==ExtractMode.MODE_CORRELATED.ordinal() && ret.length>1)
       correlate(ret);
 
-    if(extractMode==MODE_FILLED && ret.length>1)
+    if(extractMode==ExtractMode.MODE_FILLED.ordinal() && ret.length>1)
       fill(ret);
 
     return ret;
@@ -447,7 +493,7 @@ public abstract class HdbReader {
       } catch (HdbFailed e) {
         System.out.println("Warning, getParams() : " + e.getMessage());
       }
-      if(infos==null || infos.size()==0) {
+      if(infos==null || infos.isEmpty()) {
         HdbSigParam last = getLastParam(sigInfo);
         infos = new ArrayList<HdbSigParam>();
         infos.add(last);
@@ -463,7 +509,7 @@ public abstract class HdbReader {
 
       result = getDataFromDB(sigInfo, startDate, stopDate);
 
-      if (result.size() == 0 && extraPointEnabled) {
+      if (result.isEmpty() && extraPointEnabled) {
 
         // Try to find an extra point
         Date d;
@@ -628,5 +674,78 @@ public abstract class HdbReader {
 
   }
 
+  /***
+   * Helper method to be overridden per db implementation based on the features supported on the backend
+   * @param feat feature to be tested
+   * @return true if this feature is supported by the backend
+   */
+  public boolean isFeatureSupported(Feature feat)
+  {
+    return false;
+  }
+
+  /**
+   * Fetch data aggregate from the database.
+   *
+   * @param attName        The fully qualified tango attribute name (eg: tango://hostname:port/domain/family/member/attname)
+   * @param startDate      Beginning of the requested time interval (as string eg: "10/07/2014 10:00:00")
+   * @param stopDate       End of the requested time interval (as string eg: "10/07/2014 12:00:00")
+   *
+   * @throws HdbFailed In case of failure
+   */
+  public HdbDataSet getDataAggregate(String attName,
+                            HdbSigInfo.Interval interval,
+                            String startDate,
+                            String stopDate) throws HdbFailed {
+
+    if(attName==null)
+      throw new HdbFailed("attName input parameters is null");
+
+    HdbSigInfo sigInfo = getSigInfo(attName);
+    sigInfo.interval = interval;
+    return getDataAggregate(sigInfo, startDate, stopDate);
+
+  }
+  /**
+   * Fetch data aggregate from the database.
+   *
+   * @param sigInfo        Attribute info structure
+   * @param startDate      Beginning of the requested time interval (as string eg: "10/07/2014 10:00:00")
+   * @param stopDate       End of the requested time interval (as string eg: "10/07/2014 12:00:00")
+   *
+   * @throws HdbFailed In case of failure
+   */
+  public HdbDataSet getDataAggregate(HdbSigInfo sigInfo, String startDate, String stopDate) throws HdbFailed {
+    ArrayList<SignalInput> inputs = new ArrayList<>();
+    SignalInput input = new SignalInput();
+    input.info = sigInfo;
+    input.startDate = startDate;
+    input.endDate = stopDate;
+    inputs.add(input);
+    return getDataAggregate(inputs)[0];
+  }
+
+
+  public HdbDataSet[] getDataAggregate(List<SignalInput> inputs) throws HdbFailed {
+
+    totalRequest = 1;
+    currentRequest = 1;
+    if(isFeatureSupported(Feature.AGGREGATES))
+      return getDataAggregateFromDB(inputs);
+    return new HdbDataSet[0];
+  }
+
+  /**
+   * Fetch data aggregate from the database.
+   * By default the feature is not supported and it must be overridden by the backends that
+   * support the feature
+   * @param inputs        lists of attributes info structure
+   * @return
+   * @throws HdbFailed in case of failure
+   */
+  protected HdbDataSet[] getDataAggregateFromDB(List<SignalInput> inputs) throws HdbFailed
+  {
+    throw new HdbFailed("Feature not supported.");
+  }
 }
 

@@ -38,6 +38,9 @@ package org.tango.jhdb;
  */
 public class SignalInfo {
 
+  /***
+   * Format of the stored attribute.
+   */
   public static enum Format
   {
     SCALAR,
@@ -57,6 +60,10 @@ public class SignalInfo {
 
     }
 
+  /***
+   * Data type of the stored attribute.
+   * This is contains any types that can be stored in hdb
+   */
   public static enum Type
   {
     DOUBLE,
@@ -128,6 +135,9 @@ public class SignalInfo {
     }
   }
 
+  /***
+   * Accessibility level of the stored attribute.
+   */
   public static enum Access
   {
     RO,
