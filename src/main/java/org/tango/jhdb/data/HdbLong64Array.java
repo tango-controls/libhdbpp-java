@@ -10,8 +10,8 @@ import java.util.ArrayList;
  */
 public class HdbLong64Array extends HdbArrayData {
 
-  long[] value = null;
-  long[] wvalue = null;
+  long[] value = new long[0];
+  long[] wvalue = new long[0];
 
   public HdbLong64Array(SignalInfo info) {
     super(info);
@@ -20,6 +20,18 @@ public class HdbLong64Array extends HdbArrayData {
   public HdbLong64Array(SignalInfo info, long[] value) {
     this(info);
     this.value = value.clone();
+  }
+
+  public HdbLong64Array(SignalInfo info, long[] value, long[] wvalue) {
+    this(info);
+    this.value = value.clone();
+    this.wvalue = wvalue.clone();
+  }
+
+  @Override
+  public HdbLong64Array copyData()
+  {
+    return new HdbLong64Array(info, value, wvalue);
   }
 
   public long[] getValue() throws HdbFailed {
@@ -88,12 +100,6 @@ public class HdbLong64Array extends HdbArrayData {
         return wvalue.length;
     else
       return 0;
-  }
-
-  void copyData(HdbData src) {
-    value = ((HdbLong64Array)src).value.clone();
-    if(((HdbLong64Array)src).wvalue!=null)
-      wvalue = ((HdbLong64Array)src).wvalue.clone();
   }
 
   public String getValueAsString() {

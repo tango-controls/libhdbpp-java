@@ -66,6 +66,18 @@ public class HdbFloat extends HdbScalarData {
     this.value = value;
   }
 
+  public HdbFloat(SignalInfo info, float value, float wvalue) {
+    this(info);
+    this.value = value;
+    this.wvalue = wvalue;
+  }
+
+  @Override
+  public HdbFloat copyData()
+  {
+    return new HdbFloat(info, value, wvalue);
+  }
+
   public float getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -130,11 +142,6 @@ public class HdbFloat extends HdbScalarData {
   public void applyConversionFactor(double f) {
     value = (float)(value * f);
     wvalue = (float)(wvalue * f);
-  }
-
-  void copyData(HdbData src) {
-    this.value = ((HdbFloat)src).value;
-    this.wvalue = ((HdbFloat)src).wvalue;
   }
 
   public String getValueAsString() {

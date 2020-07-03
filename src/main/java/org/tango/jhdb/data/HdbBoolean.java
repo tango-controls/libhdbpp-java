@@ -74,6 +74,12 @@ public class HdbBoolean extends HdbScalarData {
     this.wvalue = wvalue;
   }
 
+  @Override
+  public HdbBoolean copyData()
+  {
+    return new HdbBoolean(info, value, wvalue);
+  }
+
   public boolean getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -130,11 +136,6 @@ public class HdbBoolean extends HdbScalarData {
   // Convenience function
   public void applyConversionFactor(double f) {
     // Do nothing here
-  }
-
-  void copyData(HdbData src) {
-    this.value = ((HdbBoolean)src).value;
-    this.wvalue = ((HdbBoolean)src).wvalue;
   }
 
   public String getValueAsString() {

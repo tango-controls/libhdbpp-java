@@ -42,8 +42,8 @@ import java.util.ArrayList;
  */
 public class HdbBooleanArray extends HdbArrayData {
 
-  boolean[] value = null;
-  boolean[] wvalue = null;
+  boolean[] value = new boolean[0];
+  boolean[] wvalue = new boolean[0];
 
   public HdbBooleanArray(SignalInfo info){
     super(info);
@@ -58,6 +58,12 @@ public class HdbBooleanArray extends HdbArrayData {
     this(info);
     this.value = value.clone();
     this.wvalue = wvalue.clone();
+  }
+
+  @Override
+  public HdbBooleanArray copyData()
+  {
+    return new HdbBooleanArray(info, value, wvalue);
   }
 
   public boolean[] getValue() throws HdbFailed {
@@ -145,12 +151,6 @@ public class HdbBooleanArray extends HdbArrayData {
         return wvalue.length;
     else
       return 0;
-  }
-
-  void copyData(HdbData src) {
-    value = ((HdbBooleanArray)src).value.clone();
-    if(((HdbBooleanArray)src).wvalue!=null)
-      wvalue = ((HdbBooleanArray)src).wvalue.clone();
   }
 
   public String getValueAsString() {

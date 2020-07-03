@@ -66,6 +66,18 @@ public class HdbDouble extends HdbScalarData {
     this.value = value;
   }
 
+  public HdbDouble(SignalInfo info, double value, double wvalue) {
+    this(info);
+    this.value = value;
+    this.wvalue = wvalue;
+  }
+
+  @Override
+  public HdbDouble copyData()
+  {
+    return new HdbDouble(info, value, wvalue);
+  }
+
   public double getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -152,12 +164,6 @@ public class HdbDouble extends HdbScalarData {
       return 1;
     else
       return 0;
-  }
-
-
-  void copyData(HdbData src) {
-    this.value = ((HdbDouble)src).value;
-    this.wvalue = ((HdbDouble)src).wvalue;
   }
 
   public String getValueAsString() {

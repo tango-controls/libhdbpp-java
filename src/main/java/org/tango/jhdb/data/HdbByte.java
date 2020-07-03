@@ -73,6 +73,12 @@ public class HdbByte extends HdbScalarData {
     this.wvalue = wval;
   }
 
+  @Override
+  public HdbByte copyData()
+  {
+    return new HdbByte(info, value, wvalue);
+  }
+
   public byte getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -112,11 +118,6 @@ public class HdbByte extends HdbScalarData {
   public void applyConversionFactor(double f) {
     value = (byte)(value * f);
     wvalue = (byte)(wvalue * f);
-  }
-
-  void copyData(HdbData src) {
-    this.value = ((HdbByte)src).value;
-    this.wvalue = ((HdbByte)src).wvalue;
   }
 
   public String getValueAsString() {

@@ -67,6 +67,12 @@ public class HdbUChar extends HdbScalarData {
     this.wvalue = wvalue;
   }
 
+  @Override
+  public HdbUChar copyData()
+  {
+    return new HdbUChar(info, value, wvalue);
+  }
+
   public short getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -106,11 +112,6 @@ public class HdbUChar extends HdbScalarData {
   public void applyConversionFactor(double f) {
     value = (short)(value * f);
     wvalue = (short)(wvalue * f);
-  }
-
-  void copyData(HdbData src) {
-    this.value = ((HdbUChar)src).value;
-    this.wvalue = ((HdbUChar)src).wvalue;
   }
 
   public String getValueAsString() {
