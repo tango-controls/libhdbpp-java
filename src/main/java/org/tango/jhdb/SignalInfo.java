@@ -172,6 +172,11 @@ public class SignalInfo {
       this.desc = desc;
     }
 
+    private static boolean isAggregate(Interval interval)
+    {
+        return interval != NONE;
+    }
+
     public String toString()
     {
       return desc;
@@ -312,6 +317,13 @@ public class SignalInfo {
   public boolean isState() {
     return Type.isState(dataType);
   }
+
+  /**
+   * Returns true if this signal is aggregated data, false if it is raw.
+   */
+  public boolean isAggregate() {
+        return Interval.isAggregate(interval);
+    }
 
   public String toString() {
     return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString();

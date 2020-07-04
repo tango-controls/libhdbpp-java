@@ -93,12 +93,12 @@ public abstract class HdbReader {
 
     /**
      * Input for the libhdbpp-java.
-     * Contains an HdbSigInfo, with all the information about the signal to be queried,
+     * Contains a SignalInfo, with all the information about the signal to be queried,
      * and the start and end date for the data to be fetched.
      */
     public static class SignalInput
     {
-        public HdbSigInfo info;
+        public SignalInfo info;
         public String startDate;
         public String endDate;
     }
@@ -201,6 +201,48 @@ public abstract class HdbReader {
 
     return getData(sigInfos,startDate,stopDate,extractMode);
 
+  }
+
+  /**
+   * Fetch data from the database from several attributes.
+   *
+   * @param inputs       List of inputs
+   * @param extractMode    Extraction mode MODE_NORMAL,MODE_IGNORE_ERROR or MODE_CORRELATED
+   *
+   * @throws HdbFailed In case of failure
+   */
+  public HdbDataSet[] getData(List<SignalInput> inputs,
+                              ExtractMode extractMode) throws HdbFailed {
+    if(inputs.isEmpty())
+      throw new HdbFailed("getData(): sigInfos input parameters is null");
+
+    totalRequest = inputs.size();
+
+    // Fetch data
+    HdbDataSet[] ret;
+    ret = new HdbDataSet[inputs.size()];
+    for (int i = 0; i < ret.length; i++) {
+      currentRequest = i + 1;
+      final SignalInput in = inputs.get(i);
+      ret[i] = getDataPrivate(in.info, in.startDate, in.endDate);
+    }
+
+    // Remove hasFailed
+    if (extractMode == ExtractMode.MODE_IGNORE_ERROR ||
+            extractMode == ExtractMode.MODE_CORRELATED ||
+            extractMode == ExtractMode.MODE_FILLED) {
+      for (int i = 0; i < ret.length; i++)
+        ret[i].removeHasFailed();
+    }
+
+    // Correlated mode
+    if (extractMode == ExtractMode.MODE_CORRELATED && ret.length > 1)
+      correlate(ret);
+
+    if (extractMode == ExtractMode.MODE_FILLED && ret.length > 1)
+      fill(ret);
+
+    return ret;
   }
 
   /**
@@ -682,70 +724,6 @@ public abstract class HdbReader {
   public boolean isFeatureSupported(Feature feat)
   {
     return false;
-  }
-
-  /**
-   * Fetch data aggregate from the database.
-   *
-   * @param attName        The fully qualified tango attribute name (eg: tango://hostname:port/domain/family/member/attname)
-   * @param startDate      Beginning of the requested time interval (as string eg: "10/07/2014 10:00:00")
-   * @param stopDate       End of the requested time interval (as string eg: "10/07/2014 12:00:00")
-   *
-   * @throws HdbFailed In case of failure
-   */
-  public HdbDataSet getDataAggregate(String attName,
-                            HdbSigInfo.Interval interval,
-                            String startDate,
-                            String stopDate) throws HdbFailed {
-
-    if(attName==null)
-      throw new HdbFailed("attName input parameters is null");
-
-    HdbSigInfo sigInfo = getSigInfo(attName);
-    sigInfo.interval = interval;
-    return getDataAggregate(sigInfo, startDate, stopDate);
-
-  }
-  /**
-   * Fetch data aggregate from the database.
-   *
-   * @param sigInfo        Attribute info structure
-   * @param startDate      Beginning of the requested time interval (as string eg: "10/07/2014 10:00:00")
-   * @param stopDate       End of the requested time interval (as string eg: "10/07/2014 12:00:00")
-   *
-   * @throws HdbFailed In case of failure
-   */
-  public HdbDataSet getDataAggregate(HdbSigInfo sigInfo, String startDate, String stopDate) throws HdbFailed {
-    ArrayList<SignalInput> inputs = new ArrayList<>();
-    SignalInput input = new SignalInput();
-    input.info = sigInfo;
-    input.startDate = startDate;
-    input.endDate = stopDate;
-    inputs.add(input);
-    return getDataAggregate(inputs)[0];
-  }
-
-
-  public HdbDataSet[] getDataAggregate(List<SignalInput> inputs) throws HdbFailed {
-
-    totalRequest = 1;
-    currentRequest = 1;
-    if(isFeatureSupported(Feature.AGGREGATES))
-      return getDataAggregateFromDB(inputs);
-    return new HdbDataSet[0];
-  }
-
-  /**
-   * Fetch data aggregate from the database.
-   * By default the feature is not supported and it must be overridden by the backends that
-   * support the feature
-   * @param inputs        lists of attributes info structure
-   * @return
-   * @throws HdbFailed in case of failure
-   */
-  protected HdbDataSet[] getDataAggregateFromDB(List<SignalInput> inputs) throws HdbFailed
-  {
-    throw new HdbFailed("Feature not supported.");
   }
 }
 
