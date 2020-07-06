@@ -33,6 +33,9 @@
 
 package org.tango.jhdb;
 
+import org.tango.jhdb.data.HdbData;
+import java.util.Set;
+
 /**
  * Signal info structure
  */
@@ -192,6 +195,7 @@ public class SignalInfo {
   public int     queryConfig=0; // Flag to query config
   public Access  access;        // Write only flag
   public Interval interval = Interval.NONE; // interval, for aggregates
+  public Set<HdbData.Aggregate> aggregates;
 
   public SignalInfo()
   {
