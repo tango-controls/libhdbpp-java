@@ -101,47 +101,20 @@ public class PostgreSQLSchema extends HdbReader {
 
   public PostgreSQLSchema(String host,String db,String _user,String _passwd,short port) throws HdbFailed {
 
-    user = _user;
-    passwd = _passwd;
-
-    if(host==null || host.isEmpty()) {
-      host = System.getenv("HDB_POSTGRESQL_HOST");
-      if (host==null || host.isEmpty()) {
-        host = System.getProperty("HDB_POSTGRESQL_HOST");
-        if (host==null || host.isEmpty())
-          throw new HdbFailed("host input parameter cannot be null if HDB_POSTGRESQL_HOST variable is not defined");
-      }
+    host = getPropertyOrDefault("HDB_POSTGRESQL_HOST", host, null);
+    if (host == null)
+    {
+      throw new HdbFailed("host input parameter cannot be null if HDB_POSTGRESQL_HOST variable is not defined");
     }
 
-    if(user==null || user.isEmpty()) {
-      user = System.getenv("HDB_USER");
-      if (user==null || user.isEmpty()) {
-        user = System.getProperty("HDB_USER");
-        if (user==null || user.isEmpty())
-          user = DEFAULT_DB_USER;
-      }
-    }
+    user = getPropertyOrDefault("HDB_USER", _user, DEFAULT_DB_USER);
 
-    if(passwd==null || passwd.isEmpty()) {
-      passwd = System.getenv("HDB_PASSWORD");
-      if (passwd==null || passwd.isEmpty()) {
-        passwd = System.getProperty("HDB_PASSWORD");
-        if (passwd==null || passwd.isEmpty())
-          passwd = DEFAULT_DB_PASSWORD;
-      }
-    }
+    passwd = getPropertyOrDefault("HDB_PASSWORD", _passwd, DEFAULT_DB_PASSWORD);
 
-    if(db==null || db.isEmpty()) {
-      db = System.getenv("HDB_NAME");
-      if (db==null || db.isEmpty()) {
-        db = System.getProperty("HDB_NAME");
-        if (db==null || db.isEmpty())
-          db = DEFAULT_DB_NAME;
-      }
-    }
+    db = getPropertyOrDefault("HDB_NAME", db, DEFAULT_DB_NAME);
 
     if(port==0) {
-      String pStr = System.getenv("HDB_POSTGRESQL_PORT");
+      String pStr = getPropertyOrDefault("HDB_POSTGRESQL_PORT", null, null);
       if(pStr==null || passwd.isEmpty())
         port = DEFAULT_DB_PORT;
       else {
@@ -160,6 +133,20 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  private String getPropertyOrDefault(String property, String value, String default_value)
+  {
+    String ret = value;
+    if(ret==null || ret.isEmpty()) {
+      ret = System.getenv(property);
+      if (ret==null || ret.isEmpty()) {
+        ret = System.getProperty(property);
+        if (ret==null || ret.isEmpty())
+          ret = default_value;
+      }
+    }
+    return ret;
+  }
+  
   private void connect() throws HdbFailed {
 
     try {
