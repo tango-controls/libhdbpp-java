@@ -167,6 +167,11 @@ public class PostgreSQLSchema extends HdbReader {
   public void disconnect () {
 
     try {
+      for(PreparedStatement statement : prepQueries.values())
+      {
+        statement.close();
+      }
+      prepQueries.clear();
       connection.close();
     } catch (SQLException e) {
       System.out.println("Warning closing connection : " + e.getMessage());
@@ -315,7 +320,7 @@ public class PostgreSQLSchema extends HdbReader {
         statement.close();
 
       } catch (SQLException e) {
-        throw new HdbFailed("Failed to get data: " + e.getMessage());
+        throw new HdbFailed("Failed to get data for query: " + query + "\n" + e.getMessage());
       }
 
     }
@@ -368,16 +373,16 @@ public class PostgreSQLSchema extends HdbReader {
       try {
         prepQueries.put(sigInfo, connection.prepareStatement(query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY));
       } catch (SQLException e) {
-        throw new HdbFailed("An error occured upon query preparation for query: " + query);
+        throw new HdbFailed("An error occurred upon query preparation for query: " + query);
       }
     }
 
     ArrayList<HdbData> ret = new ArrayList<>();
 
-    try {
 
-      //retrieve prepared statement
-      statement = prepQueries.get(sigInfo);
+    //retrieve prepared statement
+    statement = prepQueries.get(sigInfo);
+    try {
 
       //fill the placeholders
       statement.setInt(1, Integer.parseInt(sigInfo.sigId));
@@ -400,8 +405,6 @@ public class PostgreSQLSchema extends HdbReader {
       {
         extractRawData(rs, sigInfo, isRW, isWO, queryCount, ret);
       }
-
-      statement.close();
 
     } catch (SQLException e) {
       throw new HdbFailed("Failed to get data: " + e.getMessage());

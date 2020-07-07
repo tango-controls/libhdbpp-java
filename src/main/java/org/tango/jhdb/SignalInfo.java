@@ -161,7 +161,7 @@ public class SignalInfo {
 
   public static enum Interval
   {
-    NONE(""),
+    NONE("RAW"),
     ONE_MIN("1min"),
     TEN_MIN("10min"),
     ONE_HOUR("1hour"),
@@ -199,6 +199,20 @@ public class SignalInfo {
 
   public SignalInfo()
   {
+  }
+
+  public SignalInfo(SignalInfo parent)
+  {
+    this.name = parent.name;
+    this.sigId = parent.sigId;
+    this.format = parent.format;
+    this.dataType = parent.dataType;
+    this.tableName = parent.tableName;
+    this.isWO = parent.isWO;
+    this.queryConfig = parent.queryConfig;
+    this.access = parent.access;
+    this.interval = parent.interval;
+    this.aggregates = parent.aggregates;
   }
 
   protected SignalInfo(Type type, Format fmt, Access acc)
@@ -330,7 +344,7 @@ public class SignalInfo {
     }
 
   public String toString() {
-    return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString();
+    return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString()+ ", Interval=" + interval.toString();
   }
 
   @Override

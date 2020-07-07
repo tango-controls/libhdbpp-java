@@ -320,12 +320,7 @@ public class HdbSigInfo extends SignalInfo
 
   protected HdbSigInfo(SignalInfo parent)
   {
-    super(parent.dataType, parent.format, parent.access);
-    this.name = parent.name;
-    this.sigId = parent.sigId;
-    this.tableName = parent.tableName;
-    this.isWO = parent.isWO;
-    this.queryConfig = parent.queryConfig;
+    super(parent);
     this.type = sigInfoToType.getOrDefault(parent.dataType, 0);
   }
 
