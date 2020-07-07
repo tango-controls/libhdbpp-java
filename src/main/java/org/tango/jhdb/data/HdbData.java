@@ -270,7 +270,7 @@ public abstract class HdbData {
 
     if(!hasFailed()) {
       parseValue(value_r);
-      parseWriteValue(value_w);
+      parseWriteValue(value_w.isEmpty() ? null : value_w);
     }
 
   }
