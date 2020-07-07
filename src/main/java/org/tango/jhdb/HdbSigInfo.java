@@ -33,8 +33,8 @@
 
 package org.tango.jhdb;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Signal info structure
@@ -115,7 +115,7 @@ public class HdbSigInfo extends SignalInfo
 
   static
   {
-    sigInfoToType = new TreeMap<>();
+    sigInfoToType = new HashMap<>();
     SignalInfo scalar_double_ro = new SignalInfo(Type.DOUBLE, Format.SCALAR, Access.RO);
     SignalInfo scalar_double_rw = new SignalInfo(Type.DOUBLE, Format.SCALAR, Access.RW);
     SignalInfo array_double_ro = new SignalInfo(Type.DOUBLE, Format.SPECTRUM, Access.RO);
