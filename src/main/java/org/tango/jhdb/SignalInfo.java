@@ -198,35 +198,35 @@ public class SignalInfo {
       access = Access.UNKNOWN;
     }
 
-    if (stype.equalsIgnoreCase("devulong64")) {
+    if (confs[1].equalsIgnoreCase("devulong64")) {
       dataType = Type.ULONG64;
-    } else if (stype.equalsIgnoreCase("devstring")) {
+    } else if (confs[1].equalsIgnoreCase("devstring")) {
       dataType = Type.STRING;
-    } else if (stype.equalsIgnoreCase("devlong64")) {
+    } else if (confs[1].equalsIgnoreCase("devlong64")) {
       dataType = Type.LONG64;
-    } else if (stype.equalsIgnoreCase("devfloat")) {
+    } else if (confs[1].equalsIgnoreCase("devfloat")) {
       dataType = Type.FLOAT;
-    } else if (stype.equalsIgnoreCase("devdouble")) {
+    } else if (confs[1].equalsIgnoreCase("devdouble")) {
       dataType = Type.DOUBLE;
-    } else if (stype.equalsIgnoreCase("devlong")) {
+    } else if (confs[1].equalsIgnoreCase("devlong")) {
       dataType = Type.LONG;
-    } else if (stype.equalsIgnoreCase("devuchar")) {
+    } else if (confs[1].equalsIgnoreCase("devuchar")) {
       dataType = Type.UCHAR;
-    } else if (stype.equalsIgnoreCase("devencoded")) {
+    } else if (confs[1].equalsIgnoreCase("devencoded")) {
       dataType = Type.ENCODED;
-    } else if (stype.equalsIgnoreCase("devushort")) {
+    } else if (confs[1].equalsIgnoreCase("devushort")) {
       dataType = Type.USHORT;
-    } else if (stype.equalsIgnoreCase("devboolean")) {
+    } else if (confs[1].equalsIgnoreCase("devboolean")) {
       dataType = Type.BOOLEAN;
-    } else if (stype.equalsIgnoreCase("devstate")) {
+    } else if (confs[1].equalsIgnoreCase("devstate")) {
       dataType = Type.STATE;
-    } else if (stype.equalsIgnoreCase("devshort")) {
+    } else if (confs[1].equalsIgnoreCase("devshort")) {
       dataType = Type.SHORT;
-    }  else if (stype.equalsIgnoreCase("devulong")) {
+    }  else if (confs[1].equalsIgnoreCase("devulong")) {
       dataType = Type.ULONG;
-    } else if (stype.equalsIgnoreCase("devchar")) {
+    } else if (confs[1].equalsIgnoreCase("devchar")) {
       dataType = Type.CHAR;
-    } else if (stype.equalsIgnoreCase("devenum")) {
+    } else if (confs[1].equalsIgnoreCase("devenum")) {
       dataType = Type.ENUM;
     } else {
       dataType = Type.UNKNOWN;
