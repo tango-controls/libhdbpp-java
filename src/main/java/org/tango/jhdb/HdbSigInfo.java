@@ -33,6 +33,7 @@
 
 package org.tango.jhdb;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -111,11 +112,11 @@ public class HdbSigInfo extends SignalInfo
   public final static int TYPE_ARRAY_ULONG64_RO = 55;
   public final static int TYPE_ARRAY_ULONG64_RW = 56;
   
-  private final static Map<SignalInfo, Integer> sigInfoToType;
+  private final static HashMap<SignalInfo, Integer> sigInfoToType;
 
   static
   {
-    sigInfoToType = new TreeMap<>();
+    sigInfoToType = new HashMap<SignalInfo, Integer>();
     SignalInfo scalar_double_ro = new SignalInfo(Type.DOUBLE, Format.SCALAR, Access.RO);
     SignalInfo scalar_double_rw = new SignalInfo(Type.DOUBLE, Format.SCALAR, Access.RW);
     SignalInfo array_double_ro = new SignalInfo(Type.DOUBLE, Format.SPECTRUM, Access.RO);
@@ -326,7 +327,7 @@ public class HdbSigInfo extends SignalInfo
     this.tableName = parent.tableName;
     this.isWO = parent.isWO;
     this.queryConfig = parent.queryConfig;
-    this.type = sigInfoToType.getOrDefault(parent.dataType, 0);
+    this.type = sigInfoToType.getOrDefault(parent, 0);
   }
 
   public boolean isStateType()
