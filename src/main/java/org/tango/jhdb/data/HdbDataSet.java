@@ -33,7 +33,7 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
@@ -44,7 +44,7 @@ public class HdbDataSet {
 
   ArrayList<HdbData> data;
   String name;
-  int type;
+  SignalInfo info;
   long invalidValue=Long.MIN_VALUE;
 
   /**
@@ -65,25 +65,18 @@ public class HdbDataSet {
 
   /**
    * Set the type of this dataset
-   * @param type Type
+   * @param info Type
    */
-  public void setType(int type) {
-    this.type = type;
+  public void setSigInfo(SignalInfo info) {
+    this.info = info;
   }
 
   /**
    * Get the name of this dataset
    * @return
    */
-  public int getType() {
-    return type;
-  }
-  /**
-   * Set the name of this dataset
-   * @param name Name
-   */
-  public void setName(String name) {
-    this.name = name;
+  public SignalInfo getSigInfo() {
+    return info;
   }
 
   /**
@@ -91,7 +84,7 @@ public class HdbDataSet {
    * @return
    */
   public String getName() {
-    return name;
+    return info.name;
   }
 
   /**
@@ -216,9 +209,9 @@ public class HdbDataSet {
    */
   public double[] getValueAsDoubleArray() throws HdbFailed {
 
-    if(HdbSigInfo.isArrayType(getType()))
+    if(getSigInfo().isArray())
       throw new HdbFailed("Not a scalar type ");
-    if(!HdbSigInfo.isNumericType(getType()))
+    if(!getSigInfo().isNumeric())
       throw new HdbFailed("Not a numerical type ");
 
     double[] ret = new double[size()];
@@ -238,9 +231,9 @@ public class HdbDataSet {
    */
   public double[] getWriteValueAsDoubleArray() throws HdbFailed {
 
-    if(HdbSigInfo.isArrayType(getType()))
+    if(getSigInfo().isArray())
       throw new HdbFailed("Not a scalar type ");
-    if(!HdbSigInfo.isNumericType(getType()))
+    if(!getSigInfo().isNumeric())
       throw new HdbFailed("Not a numerical type ");
 
     double[] ret = new double[size()];
@@ -269,10 +262,10 @@ public class HdbDataSet {
    */
   public long[] getValueAsLongArray() throws HdbFailed {
 
-    if(HdbSigInfo.isArrayType(getType()))
-      throw new HdbFailed("Not a scalar type ");
-    if(!HdbSigInfo.isIntegerType(getType()))
-      throw new HdbFailed("Not an integer type ");
+      if(getSigInfo().isArray())
+          throw new HdbFailed("Not a scalar type ");
+      if(!getSigInfo().isNumeric())
+          throw new HdbFailed("Not a numerical type ");
 
     long[] ret = new long[size()];
     for(int i=0;i<size();i++)
@@ -290,10 +283,10 @@ public class HdbDataSet {
    */
   public long[] getWriteValueAsLongArray() throws HdbFailed {
 
-    if(HdbSigInfo.isArrayType(getType()))
-      throw new HdbFailed("Not a scalar type ");
-    if(!HdbSigInfo.isIntegerType(getType()))
-      throw new HdbFailed("Not an integer type ");
+      if(getSigInfo().isArray())
+          throw new HdbFailed("Not a scalar type ");
+      if(!getSigInfo().isNumeric())
+          throw new HdbFailed("Not a numerical type ");
 
     long[] ret = new long[size()];
     for(int i=0;i<size();i++)

@@ -33,25 +33,26 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
 /**
  * Tango HDB state array data
  */
-public class HdbStateArray extends HdbData {
+public class HdbStateArray extends HdbArrayData {
 
   int[] value = null;
   int[] wvalue = null;
 
-  public HdbStateArray(int type) {
-    this.type = type;
+  public HdbStateArray(SignalInfo info) {
+    super(info);
   }
 
-  public HdbStateArray(int type,int[] value) {
-    this.type = type;
-    this.value = value;
+  public HdbStateArray(SignalInfo info, int[] value, int[] wvalue) {
+    this(info);
+    this.value = value.clone();
+    this.wvalue = wvalue.clone();
   }
 
   public int[] getValue() throws HdbFailed {
@@ -99,19 +100,6 @@ public class HdbStateArray extends HdbData {
 
   }
 
-  public String toString() {
-
-    if(hasFailed())
-      return timeToStr(dataTime)+": "+errorMessage;
-
-    if(type== HdbSigInfo.TYPE_ARRAY_STATE_RO)
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+" "+qualitytoStr(qualityFactor);
-    else
-      return timeToStr(dataTime)+": dim="+Integer.toString(value.length)+","+Integer.toString(wvalue.length)+" "+
-          qualitytoStr(qualityFactor);
-
-  }
-
   // Convenience function
   public void applyConversionFactor(double f) {
     // Do nothing here
@@ -123,7 +111,7 @@ public class HdbStateArray extends HdbData {
       return value.length;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       if(wvalue==null)
         return 0;
       else
@@ -168,14 +156,6 @@ public class HdbStateArray extends HdbData {
     return ret.toString();
   }
 
-  public double getValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public double getWriteValueAsDouble() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
   public double[] getValueAsDoubleArray() throws HdbFailed {
     if(hasFailed())
       throw new HdbFailed(this.errorMessage);
@@ -194,14 +174,6 @@ public class HdbStateArray extends HdbData {
     for(int i=0;i<wvalue.length;i++)
       ret[i] = (double)wvalue[i];
     return ret;
-  }
-
-  public long getValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
-  }
-
-  public long getWriteValueAsLong() throws HdbFailed {
-    throw new HdbFailed("This datum is not scalar");
   }
 
   public long[] getValueAsLongArray() throws HdbFailed {

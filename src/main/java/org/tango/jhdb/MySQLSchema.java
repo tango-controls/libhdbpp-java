@@ -269,7 +269,7 @@ public class MySQLSchema extends HdbReader {
 
   public HdbSigInfo getSigInfo(String attName) throws HdbFailed {
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
     attName = ret.name;
 
     String query = "SELECT att_conf.att_conf_id,att_conf_data_type.data_type FROM att_conf,att_conf_data_type WHERE " +
@@ -281,7 +281,9 @@ public class MySQLSchema extends HdbReader {
       ResultSet resultSet = statement.executeQuery(query);
       if(resultSet.next()) {
         ret.sigId = resultSet.getString(1);
-        ret.type = HdbSigInfo.typeFromName(resultSet.getString(2));
+        String data_type = resultSet.getString(2);
+        ret.setTypeAccessFormatFromName(data_type);
+        ret.tableName = "att_" + data_type;
       } else {
         throw new HdbFailed("Signal not found");
       }
@@ -290,11 +292,11 @@ public class MySQLSchema extends HdbReader {
       throw new HdbFailed("Failed to retrieve signal id: "+e.getMessage());
     }
 
-    return ret;
+    return new HdbSigInfo(ret);
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String start_date,
                            String stop_date) throws HdbFailed {
 
@@ -303,15 +305,15 @@ public class MySQLSchema extends HdbReader {
 
     checkDates(start_date,stop_date);
 
-    if(HdbSigInfo.isArrayType(sigInfo.type)) {
-      return getArrayData(sigInfo.type, sigInfo.sigId, start_date, stop_date);
+    if(sigInfo.isArray()) {
+      return getArrayData(sigInfo, sigInfo.sigId, start_date, stop_date);
     } else {
-      return getScalarData(sigInfo.type, sigInfo.sigId, start_date, stop_date);
+      return getScalarData(sigInfo, sigInfo.sigId, start_date, stop_date);
     }
 
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     String query = "SELECT recv_time,insert_time,label,unit,standard_unit,display_unit,format,"+
         "archive_rel_change,archive_abs_change,archive_period,description" +
@@ -319,7 +321,7 @@ public class MySQLSchema extends HdbReader {
         " WHERE att_conf_id='" + sigInfo.sigId + "'" +
         " ORDER BY recv_time DESC limit 1";
 
-    HdbSigParam ret = new HdbSigParam();
+    HdbSigParam ret = new HdbSigParam(sigInfo);
 
     try {
 
@@ -364,11 +366,11 @@ public class MySQLSchema extends HdbReader {
   public ArrayList<HdbSigParam> getParams(String attName,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getParams(sigInfo,start_date,stop_date);
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
 
@@ -390,7 +392,7 @@ public class MySQLSchema extends HdbReader {
       ResultSet rs = statement.executeQuery(query);
       while(rs.next()) {
 
-        HdbSigParam hd = new HdbSigParam();
+        HdbSigParam hd = new HdbSigParam(sigInfo);
         hd.recvTime = timeValue(rs.getTimestamp(1));
         hd.insertTime = timeValue(rs.getTimestamp(2));
         hd.label = rs.getString(3);
@@ -432,20 +434,20 @@ public class MySQLSchema extends HdbReader {
 
   // ---------------------------------------------------------------------------------------
 
-  private HdbDataSet getArrayData(int type,
+  private HdbDataSet getArrayData(SignalInfo info,
                                   String sigId,
                                   String start_date,
                                   String stop_date) throws HdbFailed {
 
-    boolean isRW = HdbSigInfo.isRWType(type);
+    boolean isRW = info.isRW();
 
     String query;
     int queryCount=0;
-
+    String tablename = info.tableName;
     if (hasProgressListener()) {
 
       // Get a count of the request
-      query = "SELECT count(*) FROM " + tableNames[type] +
+      query = "SELECT count(*) FROM " + tablename +
           " WHERE att_conf_id='" + sigId + "'" +
           " AND data_time>='" + toDBDate(start_date) + "'" +
           " AND data_time<='" + toDBDate(stop_date) + "'";
@@ -469,8 +471,8 @@ public class MySQLSchema extends HdbReader {
 
     String rwField = isRW?",value_w":"";
         query = "SELECT data_time,recv_time,insert_time,att_error_desc.error_desc as error_desc,quality,idx,value_r"+rwField+
-        " FROM " + tableNames[type] +
-        " left outer join att_error_desc on "+ tableNames[type]+".att_error_desc_id = att_error_desc.att_error_desc_id" +
+        " FROM " + tablename +
+        " left outer join att_error_desc on "+ tablename+".att_error_desc_id = att_error_desc.att_error_desc_id" +
         " WHERE att_conf_id='" + sigId + "'" +
         " AND data_time>='" + toDBDate(start_date) + "'" +
         " AND data_time<='" + toDBDate(stop_date) + "'" +
@@ -504,7 +506,7 @@ public class MySQLSchema extends HdbReader {
           // Store current Item
           if(newItem) {
 
-            HdbData hd = HdbData.createData(type);
+            HdbData hd = HdbData.createData(info);
             hd.parse(
                 dTime,     //Tango timestamp
                 recvTime,  //Event recieve timestamp
@@ -546,7 +548,7 @@ public class MySQLSchema extends HdbReader {
       if( newItem ) {
 
         // Store last item
-        HdbData hd = HdbData.createData(type);
+        HdbData hd = HdbData.createData(info);
         hd.parse(
             dTime,     // Tango timestamp
             recvTime,  // Event receive timestamp
@@ -573,18 +575,18 @@ public class MySQLSchema extends HdbReader {
 
   // ---------------------------------------------------------------------------------------
 
-  private HdbDataSet getScalarData(int type,
+  private HdbDataSet getScalarData(SignalInfo info,
                                    String sigId,
                                    String start_date,
                                    String stop_date) throws HdbFailed {
 
     String query;
     int queryCount=0;
-
+    String tablename = info.tableName;
     if (hasProgressListener()) {
 
       // Get a count of the request
-      query = "SELECT count(*) FROM " + tableNames[type] +
+      query = "SELECT count(*) FROM " + tablename +
           " WHERE att_conf_id='" + sigId + "'" +
           " AND data_time>='" + toDBDate(start_date) + "'" +
           " AND data_time<='" + toDBDate(stop_date) + "'";
@@ -603,11 +605,11 @@ public class MySQLSchema extends HdbReader {
 
     }
 
-    boolean isRW = HdbSigInfo.isRWType(type);
+    boolean isRW = info.isRW();
     String rwField = isRW?",value_w":"";
     query = "SELECT data_time,recv_time,insert_time, att_error_desc.error_desc as error_desc,quality,value_r"+rwField+
-        " FROM " + tableNames[type] +
-        " left outer join att_error_desc on "+ tableNames[type]+".att_error_desc_id = att_error_desc.att_error_desc_id" +
+        " FROM " + tablename +
+        " left outer join att_error_desc on "+ tablename+".att_error_desc_id = att_error_desc.att_error_desc_id" +
         " WHERE att_conf_id='" + sigId + "'" +
         " AND data_time>'" + toDBDate(start_date) + "'" +
         " AND data_time<'" + toDBDate(stop_date) + "'" +
@@ -626,7 +628,7 @@ public class MySQLSchema extends HdbReader {
       ResultSet rs = statement.executeQuery(query);
       while(rs.next()) {
 
-        HdbData hd = HdbData.createData(type);
+        HdbData hd = HdbData.createData(info);
         value.clear();
         value.add(rs.getString(6));
         if(isRW) {

@@ -33,24 +33,36 @@
 package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
-import org.tango.jhdb.HdbSigInfo;
+import org.tango.jhdb.SignalInfo;
 
 import java.util.ArrayList;
 
 /**
  * HDB double data
  */
-public class HdbDouble extends HdbData {
+public class HdbDouble extends HdbScalarData {
 
   double value = Double.NaN;
   double wvalue = Double.NaN;
 
-  public HdbDouble(int type) {
-    this.type = type;
+  public static HdbData createData(SignalInfo info) throws HdbFailed
+  {
+    switch (info.format)
+    {
+      case SCALAR:
+        return new HdbDouble(info);
+      case SPECTRUM:
+        return new HdbDoubleArray(info);
+      default:
+        throw new HdbFailed("Format :" + info.format + " not supported.");
+    }
+  }
+  public HdbDouble(SignalInfo info) {
+    super(info);
   }
 
-  public HdbDouble(int type,double value) {
-    this.type = type;
+  public HdbDouble(SignalInfo info, double value) {
+    this(info);
     this.value = value;
   }
 
@@ -119,7 +131,7 @@ public class HdbDouble extends HdbData {
     if(hasFailed())
       return timeToStr(dataTime)+": "+errorMessage;
 
-    if(type== HdbSigInfo.TYPE_SCALAR_DOUBLE_RO)
+    if(!hasWriteValue())
       return timeToStr(dataTime)+": "+Double.toString(value)+" "+qualitytoStr(qualityFactor);
     else
       return timeToStr(dataTime)+": "+Double.toString(value)+";"+Double.toString(wvalue)+" "+
@@ -136,7 +148,7 @@ public class HdbDouble extends HdbData {
     return 1;
   }
   int dataSizeW() {
-    if(HdbSigInfo.isRWType(type))
+    if(hasWriteValue())
       return 1;
     else
       return 0;

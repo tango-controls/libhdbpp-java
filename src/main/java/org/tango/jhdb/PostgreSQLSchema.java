@@ -37,6 +37,7 @@ import org.tango.jhdb.data.HdbDataSet;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -47,6 +48,38 @@ public class PostgreSQLSchema extends HdbReader {
   public static final String DEFAULT_DB_URL_PREFIX = "jdbc:postgresql://";
   public static final int    DEFAULT_DB_PORT = 5432;
 
+  private static final HashMap<Integer, SignalInfo.Access> INT_TO_ACCESS = new HashMap<>();
+  private static final HashMap<Integer, SignalInfo.Format> INT_TO_FORMAT = new HashMap<>();
+  private static final HashMap<Integer, SignalInfo.Type> INT_TO_TYPE = new HashMap<>();
+
+  static {
+    INT_TO_ACCESS.put(0, SignalInfo.Access.RO);
+    INT_TO_ACCESS.put(2, SignalInfo.Access.WO);
+    INT_TO_ACCESS.put(3, SignalInfo.Access.RW);
+
+    INT_TO_FORMAT.put(0, SignalInfo.Format.SCALAR);
+    INT_TO_FORMAT.put(1, SignalInfo.Format.SPECTRUM);
+    INT_TO_FORMAT.put(2, SignalInfo.Format.IMAGE);
+
+    INT_TO_TYPE.put(1, SignalInfo.Type.BOOLEAN);
+    INT_TO_TYPE.put(2, SignalInfo.Type.SHORT);
+    INT_TO_TYPE.put(3, SignalInfo.Type.LONG);
+    INT_TO_TYPE.put(4, SignalInfo.Type.FLOAT);
+    INT_TO_TYPE.put(5, SignalInfo.Type.DOUBLE);
+    INT_TO_TYPE.put(6, SignalInfo.Type.USHORT);
+    INT_TO_TYPE.put(7, SignalInfo.Type.ULONG);
+    INT_TO_TYPE.put(8, SignalInfo.Type.STRING);
+    INT_TO_TYPE.put(19, SignalInfo.Type.STATE);
+    INT_TO_TYPE.put(22, SignalInfo.Type.UCHAR);
+    INT_TO_TYPE.put(23, SignalInfo.Type.LONG64);
+    INT_TO_TYPE.put(24, SignalInfo.Type.ULONG64);
+    INT_TO_TYPE.put(28, SignalInfo.Type.ENCODED);
+    INT_TO_TYPE.put(30, SignalInfo.Type.ENUM);
+  }
+
+
+  private static HashMap<SignalInfo, PreparedStatement> prepQueries = new HashMap<>();
+
   // Notify every PROGRESS_NBROW rows
   private final static int PROGRESS_NBROW =10000;
   private Connection connection;
@@ -56,12 +89,12 @@ public class PostgreSQLSchema extends HdbReader {
   private String passwd;
 
   /**
-   * Connects to a MySQL HDB.
-   * @param host MySQL hostname
+   * Connects to a postgresql HDB.
+   * @param host postgresql hostname
    * @param db Database name (default is "hdb")
-   * @param _user MySQL user name
-   * @param _passwd MySQL user password
-   * @param port MySQL databse port (pass 0 for default Mysql port)
+   * @param _user postgresql user name
+   * @param _passwd postgresql user password
+   * @param port postgresql databse port (pass 0 for default postgresql port)
    * @throws HdbFailed in case of failure
    */
 
@@ -219,10 +252,13 @@ public class PostgreSQLSchema extends HdbReader {
 
     connectionCheck();
 
-    HdbSigInfo ret = prepareSigInfo(attName);
+    SignalInfo ret = prepareSigInfo(attName);
     attName = ret.name;
-
-    String query = "SELECT att_conf_id,table_name,att_conf_write_id FROM att_conf WHERE att_name='" + attName + "'";
+    String query = "SELECT att_conf_id, table_name, write_num, type_num, format_num " +
+            "FROM att_conf join att_conf_format on (att_conf.att_conf_format_id=att_conf_format.att_conf_format_id) " +
+            "join att_conf_write on (att_conf.att_conf_write_id=att_conf_write.att_conf_write_id) " +
+            "join att_conf_type on (att_conf.att_conf_type_id=att_conf_type.att_conf_type_id) " +
+            "WHERE att_name='" + attName + "'";
 
     try {
       Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
@@ -230,22 +266,9 @@ public class PostgreSQLSchema extends HdbReader {
       if(resultSet.next()) {
         ret.sigId = resultSet.getString(1);
         ret.tableName = resultSet.getString(2);
-        ret.isWO = false;
-        int rw = resultSet.getInt(3);
-        String typeName = ret.tableName.substring(4); // remove "att_"
-        switch(rw) {
-          case 1: // RO
-            typeName += "_ro";
-            break;
-          case 3: // WO
-            typeName += "_rw";
-            ret.isWO = true;
-            break;
-          default: // RW
-            typeName += "_rw";
-            break;
-        }
-        ret.type = HdbSigInfo.typeFromName(typeName);
+        ret.access = INT_TO_ACCESS.getOrDefault(resultSet.getInt(3), SignalInfo.Access.UNKNOWN);
+        ret.dataType = INT_TO_TYPE.getOrDefault(resultSet.getInt(4), SignalInfo.Type.UNKNOWN);
+        ret.format = INT_TO_FORMAT.getOrDefault(resultSet.getInt(5), SignalInfo.Format.UNKNOWN);
       } else {
         throw new HdbFailed("Signal not found");
       }
@@ -254,11 +277,11 @@ public class PostgreSQLSchema extends HdbReader {
       throw new HdbFailed("Failed to retrieve signal id: "+e.getMessage());
     }
 
-    return ret;
+    return new HdbSigInfo(ret);
 
   }
 
-  HdbDataSet getDataFromDB(HdbSigInfo sigInfo,
+  HdbDataSet getDataFromDB(SignalInfo sigInfo,
                            String start_date,
                            String stop_date) throws HdbFailed {
 
@@ -267,8 +290,8 @@ public class PostgreSQLSchema extends HdbReader {
 
     checkDates(start_date, stop_date);
 
-    boolean isRW = HdbSigInfo.isRWType(sigInfo.type);
-    boolean isWO = sigInfo.isWO;
+    boolean isRW = sigInfo.isRW();
+    boolean isWO = sigInfo.access == SignalInfo.Access.WO;
 
     String query;
     int queryCount = 0;
@@ -335,100 +358,48 @@ public class PostgreSQLSchema extends HdbReader {
         value.clear();
         if(isRW)
           wvalue.clear();
-
-        switch (sigInfo.type) {
-
-          case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RO:
-          case HdbSigInfo.TYPE_SCALAR_BOOLEAN_RW:
-            if(!isWO) value.add(rs.getBoolean(4));
-            if(isRW) wvalue.add(rs.getBoolean(5));
-            break;
-
-          case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RO:
-          case HdbSigInfo.TYPE_ARRAY_BOOLEAN_RW:
-            if(!isWO) convertArray(value, rs.getArray(4));
-            if(isRW) convertArray(wvalue, rs.getArray(5));
-            break;
-
-          case HdbSigInfo.TYPE_SCALAR_SHORT_RO:
-          case HdbSigInfo.TYPE_SCALAR_SHORT_RW:
-          case HdbSigInfo.TYPE_SCALAR_UCHAR_RO:
-          case HdbSigInfo.TYPE_SCALAR_UCHAR_RW:
-          case HdbSigInfo.TYPE_SCALAR_LONG_RO:
-          case HdbSigInfo.TYPE_SCALAR_LONG_RW:
-          case HdbSigInfo.TYPE_SCALAR_USHORT_RO:
-          case HdbSigInfo.TYPE_SCALAR_USHORT_RW:
-          case HdbSigInfo.TYPE_SCALAR_STATE_RO:
-          case HdbSigInfo.TYPE_SCALAR_STATE_RW:
-          case HdbSigInfo.TYPE_SCALAR_LONG64_RO:
-          case HdbSigInfo.TYPE_SCALAR_LONG64_RW:
-          case HdbSigInfo.TYPE_SCALAR_ULONG_RO:
-          case HdbSigInfo.TYPE_SCALAR_ULONG_RW:
-            if(!isWO) value.add(rs.getLong(4));
-            if(isRW) wvalue.add(rs.getLong(5));
-            break;
-
-          case HdbSigInfo.TYPE_ARRAY_SHORT_RO:
-          case HdbSigInfo.TYPE_ARRAY_SHORT_RW:
-          case HdbSigInfo.TYPE_ARRAY_UCHAR_RO:
-          case HdbSigInfo.TYPE_ARRAY_UCHAR_RW:
-          case HdbSigInfo.TYPE_ARRAY_LONG_RO:
-          case HdbSigInfo.TYPE_ARRAY_LONG_RW:
-          case HdbSigInfo.TYPE_ARRAY_USHORT_RO:
-          case HdbSigInfo.TYPE_ARRAY_USHORT_RW:
-          case HdbSigInfo.TYPE_ARRAY_STATE_RO:
-          case HdbSigInfo.TYPE_ARRAY_STATE_RW:
-          case HdbSigInfo.TYPE_ARRAY_LONG64_RO:
-          case HdbSigInfo.TYPE_ARRAY_LONG64_RW:
-          case HdbSigInfo.TYPE_ARRAY_ULONG_RO:
-          case HdbSigInfo.TYPE_ARRAY_ULONG_RW:
-            if(!isWO) convertArray(value, rs.getArray(4));
-            if(isRW) convertArray(wvalue, rs.getArray(5));
-            break;
-
-          case HdbSigInfo.TYPE_SCALAR_DOUBLE_RO:
-          case HdbSigInfo.TYPE_SCALAR_DOUBLE_RW:
-            if(!isWO) value.add(rs.getDouble(4));
-            if(isRW) wvalue.add(rs.getDouble(5));
-            break;
-
-          case HdbSigInfo.TYPE_ARRAY_DOUBLE_RO:
-          case HdbSigInfo.TYPE_ARRAY_DOUBLE_RW:
-            if(!isWO) convertArray(value, rs.getArray(4));
-            if(isRW) convertArray(wvalue, rs.getArray(5));
-            break;
-
-          case HdbSigInfo.TYPE_SCALAR_FLOAT_RO:
-          case HdbSigInfo.TYPE_SCALAR_FLOAT_RW:
-            if(!isWO) value.add(rs.getFloat(4));
-            if(isRW) wvalue.add(rs.getFloat(5));
-            break;
-
-          case HdbSigInfo.TYPE_ARRAY_FLOAT_RO:
-          case HdbSigInfo.TYPE_ARRAY_FLOAT_RW:
-            if(!isWO) convertArray(value, rs.getArray(4));
-            if(isRW) convertArray(wvalue, rs.getArray(5));
-            break;
-
-          case HdbSigInfo.TYPE_SCALAR_STRING_RO:
-          case HdbSigInfo.TYPE_SCALAR_STRING_RW:
-            if(!isWO) value.add(rs.getString(4));
-            if(isRW) wvalue.add(rs.getString(5));
-            break;
-
-          case HdbSigInfo.TYPE_ARRAY_STRING_RO:
-          case HdbSigInfo.TYPE_ARRAY_STRING_RW:
-            if(!isWO) convertArray(value, rs.getArray(4));
-            if(isRW) convertArray(wvalue, rs.getArray(5));
-            break;
-
-
+        if(sigInfo.isArray())
+        {
+          if(!isWO) convertArray(value, rs.getArray(4));
+          if(isRW) convertArray(wvalue, rs.getArray(5));
+        }
+        else
+        {
+          switch(sigInfo.dataType)
+          {
+            case BOOLEAN:
+              if(!isWO) value.add(rs.getBoolean(4));
+              if(isRW) wvalue.add(rs.getBoolean(5));
+              break;
+            case SHORT:
+            case UCHAR:
+            case LONG:
+            case USHORT:
+            case STATE:
+            case LONG64:
+            case ULONG:
+              if(!isWO) value.add(rs.getLong(4));
+              if(isRW) wvalue.add(rs.getLong(5));
+              break;
+            case DOUBLE:
+              if(!isWO) value.add(rs.getDouble(4));
+              if(isRW) wvalue.add(rs.getDouble(5));
+              break;
+            case FLOAT:
+              if(!isWO) value.add(rs.getFloat(4));
+              if(isRW) wvalue.add(rs.getFloat(5));
+              break;
+            case STRING:
+              if(!isWO) value.add(rs.getString(4));
+              if(isRW) wvalue.add(rs.getString(5));
+              break;
+          }
         }
 
         // Write only attribute, copy write data to read data
         if(isWO) value.addAll(wvalue);
 
-        HdbData hd = HdbData.createData(sigInfo.type);
+        HdbData hd = HdbData.createData(sigInfo);
 
         hd.parse(
             dTime,     //Tango timestamp
@@ -459,7 +430,7 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
-  public  HdbSigParam getLastParam(HdbSigInfo sigInfo) throws HdbFailed {
+  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     connectionCheck();
 
@@ -469,7 +440,7 @@ public class PostgreSQLSchema extends HdbReader {
         " WHERE att_conf_id='" + sigInfo.sigId + "'" +
         " ORDER BY recv_time DESC limit 1";
 
-    HdbSigParam ret = new HdbSigParam();
+    HdbSigParam ret = new HdbSigParam(sigInfo);
 
     try {
 
@@ -514,11 +485,11 @@ public class PostgreSQLSchema extends HdbReader {
   public ArrayList<HdbSigParam> getParams(String attName,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
-    HdbSigInfo sigInfo = getSigInfo(attName);
+    SignalInfo sigInfo = getSigInfo(attName);
     return getParams(sigInfo,start_date,stop_date);
   }
 
-  public ArrayList<HdbSigParam> getParams(HdbSigInfo sigInfo,
+  public ArrayList<HdbSigParam> getParams(SignalInfo sigInfo,
                                           String start_date,
                                           String stop_date) throws HdbFailed {
 
@@ -541,7 +512,7 @@ public class PostgreSQLSchema extends HdbReader {
       ResultSet rs = statement.executeQuery(query);
       while(rs.next()) {
 
-        HdbSigParam hd = new HdbSigParam();
+        HdbSigParam hd = new HdbSigParam(sigInfo);
         hd.recvTime = timeValue(rs.getTimestamp(1));
         hd.insertTime = 0;
         hd.label = rs.getString(2);
@@ -612,7 +583,7 @@ public class PostgreSQLSchema extends HdbReader {
 
     connectionCheck();
 
-    ArrayList<String> list = new ArrayList<String>();
+    ArrayList<String> list = new ArrayList<>();
 
     try {
       Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
