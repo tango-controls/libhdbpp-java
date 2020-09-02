@@ -123,6 +123,7 @@ public class CassandraSchema extends HdbReader {
 
   // Prepared queries for getting data
   private static HashMap<SignalInfo, PreparedStatement> prepQueries = new HashMap<SignalInfo, PreparedStatement>();
+  private static HashMap<SignalInfo, PreparedStatement> prepQueriesFullPeriod = new HashMap<SignalInfo, PreparedStatement>();
 
 
   public CassandraSchema(String[] contacts,String db,String user,String passwd) throws HdbFailed {
@@ -206,9 +207,19 @@ public class CassandraSchema extends HdbReader {
 
     //int statementIdx = (fullPeriod?2*type+1:2*type);
 
-    if( prepQueries.containsKey(info))
-      // Query has been already prepared
-      return prepQueries.get(info);
+    HashMap<SignalInfo, PreparedStatement> preparedQueries;
+    if(fullPeriod)
+    {
+        preparedQueries = prepQueriesFullPeriod;
+    }
+    else
+    {
+        preparedQueries = prepQueries;
+    }
+    
+    if(preparedQueries.containsKey(info))
+        // Query has been already prepared
+        return preparedQueries.get(info);
 
     boolean isRW = info.isRW();
     String rwField = isRW?",value_w":"";
@@ -252,13 +263,13 @@ public class CassandraSchema extends HdbReader {
 
       }
 
-      prepQueries.put(info, session.prepare(query));
+      preparedQueries.put(info, session.prepare(query));
 
     } else {
       throw new HdbFailed("Invalid request on a not supported type: type=" + info.dataType + ", format:" + info.format + ", access:" + info.access);
     }
 
-    return prepQueries.get(info);
+    return preparedQueries.get(info);
 
   }
 
