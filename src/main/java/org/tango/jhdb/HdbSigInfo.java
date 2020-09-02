@@ -336,6 +336,15 @@ public class HdbSigInfo extends SignalInfo
   }
 
   /**
+   * Compatibility method to retrieve the type
+   * from a SignalInfo
+   */
+  public static int getType(SignalInfo parent)
+  {
+    return sigInfoToType.getOrDefault(parent, 0);
+  }
+
+  /**
    * Returns true if type is a state type
    * @param type Attribute type
    */
