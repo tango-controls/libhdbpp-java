@@ -41,10 +41,8 @@ import java.util.ArrayList;
 /**
  * Set of HDB Data
  */
-public class HdbDataSet {
+public class HdbDataSet extends ArrayList<HdbData> {
 
-  ArrayList<HdbData> data;
-  String name;
   SignalInfo info;
   long invalidValue=Long.MIN_VALUE;
 
@@ -52,16 +50,14 @@ public class HdbDataSet {
    * Construct an empty HdbDataSet
    */
   public HdbDataSet() {
-    name = "";
-    data = new ArrayList<HdbData>();
+    super();
   }
 
   /**
    * Construct a HdbDataSet with the given HdbData
    */
   public HdbDataSet(ArrayList<HdbData> data) {
-    name = "";
-    this.data = data;
+    super(data);
   }
 
   /**
@@ -100,30 +96,13 @@ public class HdbDataSet {
   }
 
   /**
-   * Return size of this HdbDataSet
-   * @return
-   */
-  public int size() {
-    return data.size();
-  }
-
-  /**
    * Apply a conversion factor to the data set.
    * If the type cannot be converted, nothing happens.
    * @param f Conversion factor
    */
   public void applyConversionFactor(double f) {
-    for(int i=0;i<data.size();i++)
-      data.get(i).applyConversionFactor(f);
-  }
-
-  /**
-   * Return HdbData at the specified index
-   * @param idx
-   * @return
-   */
-  public HdbData get(int idx) {
-    return data.get(idx);
+    for(int i=0;i<size();i++)
+      get(i).applyConversionFactor(f);
   }
 
   /**
@@ -132,17 +111,10 @@ public class HdbDataSet {
   public HdbData getLast() {
     int s = size();
     if(s>0) {
-      return data.get(s-1);
+      return get(s-1);
     } else {
       return null;
     }
-  }
-
-  /**
-   * Returns true whether this dataset is empty
-   */
-  public boolean isEmpty() {
-    return data.size()==0;
   }
 
   /**
@@ -154,7 +126,7 @@ public class HdbDataSet {
     while(i<size()) {
       HdbData d = get(i);
       if(d.hasFailed())
-        data.remove(i);
+        remove(i);
       else
         i++;
     }
@@ -165,7 +137,7 @@ public class HdbDataSet {
    * Remove first item
    */
   public void removeFirst() {
-    data.remove(0);
+    remove(0);
   }
 
   /**
@@ -183,14 +155,14 @@ public class HdbDataSet {
 
     while (low <= high) {
       int mid = (low + high) >>> 1;
-      long midVal = data.get(mid).getDataTime();
+      long midVal = get(mid).getDataTime();
 
       if (midVal < time)
         low = mid + 1;
       else if (midVal > time)
         high = mid - 1;
       else
-        return data.get(mid); // Exact match
+        return get(mid); // Exact match
     }
 
     // r is the insertion position for an asc sort

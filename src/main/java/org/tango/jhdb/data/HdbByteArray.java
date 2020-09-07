@@ -42,8 +42,8 @@ import java.util.ArrayList;
  */
 public class HdbByteArray extends HdbArrayData {
 
-  byte[] value = null;
-  byte[] wvalue = null;
+  byte[] value = new byte[0];
+  byte[] wvalue = new byte[0];
 
   public HdbByteArray(SignalInfo info) {
     super(info);
@@ -58,6 +58,12 @@ public class HdbByteArray extends HdbArrayData {
     this(info);
     this.value = value.clone();
     this.wvalue = wval.clone();
+  }
+
+  @Override
+  public HdbByteArray copyData()
+  {
+    return new HdbByteArray(info, value, wvalue);
   }
 
   public byte[] getValue() throws HdbFailed {
@@ -126,12 +132,6 @@ public class HdbByteArray extends HdbArrayData {
         return wvalue.length;
     else
       return 0;
-  }
-
-  void copyData(HdbData src) {
-    value = ((HdbByteArray)src).value.clone();
-    if(((HdbByteArray)src).wvalue!=null)
-      wvalue = ((HdbByteArray)src).wvalue.clone();
   }
 
   public String getValueAsString() {

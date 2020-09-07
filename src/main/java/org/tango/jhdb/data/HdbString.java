@@ -42,8 +42,8 @@ import java.util.ArrayList;
  */
 public class HdbString extends HdbScalarData {
 
-  String value = null;
-  String wvalue = null;
+  String value = "";
+  String wvalue = "";
 
   public static HdbData createData(SignalInfo info) throws HdbFailed
   {
@@ -65,6 +65,18 @@ public class HdbString extends HdbScalarData {
   public HdbString(SignalInfo info, String value) {
     this(info);
     this.value = value;
+  }
+
+  public HdbString(SignalInfo info, String value, String wvalue) {
+    this(info);
+    this.value = value;
+    this.wvalue = wvalue;
+  }
+
+  @Override
+  public HdbString copyData()
+  {
+    return new HdbString(info, value, wvalue);
   }
 
   public String getValue() throws HdbFailed {
@@ -108,11 +120,6 @@ public class HdbString extends HdbScalarData {
   // Convenience function
   public void applyConversionFactor(double f) {
     // Do nothing here
-  }
-
-  void copyData(HdbData src) {
-    this.value = new String(((HdbString)src).value);
-    this.wvalue = new String(((HdbString)src).wvalue);
   }
 
   public String getValueAsString() {

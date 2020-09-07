@@ -33,11 +33,17 @@
 
 package org.tango.jhdb;
 
+import org.tango.jhdb.data.HdbData;
+import java.util.Set;
+
 /**
  * Signal info structure
  */
 public class SignalInfo {
 
+  /***
+   * Format of the stored attribute.
+   */
   public static enum Format
   {
     SCALAR,
@@ -57,6 +63,10 @@ public class SignalInfo {
 
     }
 
+  /***
+   * Data type of the stored attribute.
+   * This is contains any types that can be stored in hdb
+   */
   public static enum Type
   {
     DOUBLE,
@@ -128,6 +138,9 @@ public class SignalInfo {
     }
   }
 
+  /***
+   * Accessibility level of the stored attribute.
+   */
   public static enum Access
   {
     RO,
@@ -146,6 +159,33 @@ public class SignalInfo {
     }
   }
 
+  public static enum Interval
+  {
+    NONE("RAW"),
+    ONE_MIN("1min"),
+    TEN_MIN("10min"),
+    ONE_HOUR("1hour"),
+    EIGHT_HOUR("8hour"),
+    ONE_DAY("1day");
+
+    private String desc;
+
+    private Interval(String desc)
+    {
+      this.desc = desc;
+    }
+
+    private static boolean isAggregate(Interval interval)
+    {
+        return interval != NONE;
+    }
+
+    public String toString()
+    {
+      return desc;
+    }
+  }
+
   public String  name;          // Attribute name
   public String  sigId;         // Identifier
   public Format  format;        // Data type
@@ -154,9 +194,25 @@ public class SignalInfo {
   public boolean isWO;          // Write only flag
   public int     queryConfig=0; // Flag to query config
   public Access  access;        // Write only flag
+  public Interval interval = Interval.NONE; // interval, for aggregates
+  public Set<HdbData.Aggregate> aggregates;
 
   public SignalInfo()
   {
+  }
+
+  public SignalInfo(SignalInfo parent)
+  {
+    this.name = parent.name;
+    this.sigId = parent.sigId;
+    this.format = parent.format;
+    this.dataType = parent.dataType;
+    this.tableName = parent.tableName;
+    this.isWO = parent.isWO;
+    this.queryConfig = parent.queryConfig;
+    this.access = parent.access;
+    this.interval = parent.interval;
+    this.aggregates = parent.aggregates;
   }
 
   protected SignalInfo(Type type, Format fmt, Access acc)
@@ -280,8 +336,15 @@ public class SignalInfo {
     return Type.isState(dataType);
   }
 
+  /**
+   * Returns true if this signal is aggregated data, false if it is raw.
+   */
+  public boolean isAggregate() {
+        return Interval.isAggregate(interval);
+    }
+
   public String toString() {
-    return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString();
+    return "Id=" + sigId + ", Type=" + dataType.toString() + ", Format=" + format.toString() + ", Access=" + access.toString()+ ", Interval=" + interval.toString();
   }
 
   @Override
@@ -294,13 +357,13 @@ public class SignalInfo {
     if(getClass() != info.getClass())
       return false;
     SignalInfo o = (SignalInfo) info;
-    return o.format == format && o.dataType == dataType && o.access == access;
+    return o.format == format && o.dataType == dataType && o.access == access && o.interval == interval;
   }
 
   @Override
   public int hashCode()
   {
-    return 1000* dataType.ordinal()+ 10 * format.ordinal()+ access.ordinal();
+    return 1000 * dataType.ordinal() + 100 * interval.ordinal() + 10 * format.ordinal() + access.ordinal();
   }
 
   public boolean isFloating()

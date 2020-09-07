@@ -67,6 +67,18 @@ public class HdbLong64 extends HdbScalarData {
     this.value = value;
   }
 
+  public HdbLong64(SignalInfo info, long value, long wvalue) {
+    this(info);
+    this.value = value;
+    this.wvalue = wvalue;
+  }
+
+  @Override
+  public HdbLong64 copyData()
+  {
+    return new HdbLong64(info, value, wvalue);
+  }
+
   public long getValue() throws HdbFailed {
 
     if(hasFailed())
@@ -106,11 +118,6 @@ public class HdbLong64 extends HdbScalarData {
   public void applyConversionFactor(double f) {
     value = (long)(value * f);
     wvalue = (long)(wvalue * f);
-  }
-
-  void copyData(HdbData src) {
-    this.value = ((HdbLong64)src).value;
-    this.wvalue = ((HdbLong64)src).wvalue;
   }
 
   public String getValueAsString() {

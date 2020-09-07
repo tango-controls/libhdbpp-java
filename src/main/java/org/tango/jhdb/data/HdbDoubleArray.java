@@ -42,8 +42,8 @@ import java.util.ArrayList;
  */
 public class HdbDoubleArray extends HdbArrayData {
 
-  double[] value = null;
-  double[] wvalue = null;
+  double[] value = new double[0];
+  double[] wvalue = new double[0];
 
   public HdbDoubleArray(SignalInfo info) {
     super(info);
@@ -52,6 +52,18 @@ public class HdbDoubleArray extends HdbArrayData {
   public HdbDoubleArray(SignalInfo info, double[] value) {
     this(info);
     this.value = value.clone();
+  }
+
+  public HdbDoubleArray(SignalInfo info, double[] value, double[] wvalue) {
+    this(info);
+    this.value = value.clone();
+    this.wvalue = wvalue.clone();
+  }
+
+  @Override
+  public HdbDoubleArray copyData()
+  {
+    return new HdbDoubleArray(info, value, wvalue);
   }
 
   public double[] getValue() throws HdbFailed {
@@ -141,12 +153,6 @@ public class HdbDoubleArray extends HdbArrayData {
         return wvalue.length;
     else
       return 0;
-  }
-
-  void copyData(HdbData src) {
-    value = ((HdbDoubleArray)src).value.clone();
-    if(((HdbDoubleArray)src).wvalue!=null)
-      wvalue = ((HdbDoubleArray)src).wvalue.clone();
   }
 
   public String getValueAsString() {

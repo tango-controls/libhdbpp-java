@@ -39,6 +39,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.List;
 
 /**
  * PostgreSQL database access
@@ -100,47 +101,20 @@ public class PostgreSQLSchema extends HdbReader {
 
   public PostgreSQLSchema(String host,String db,String _user,String _passwd,short port) throws HdbFailed {
 
-    user = _user;
-    passwd = _passwd;
-
-    if(host==null || host.isEmpty()) {
-      host = System.getenv("HDB_POSTGRESQL_HOST");
-      if (host==null || host.isEmpty()) {
-        host = System.getProperty("HDB_POSTGRESQL_HOST");
-        if (host==null || host.isEmpty())
-          throw new HdbFailed("host input parameter cannot be null if HDB_POSTGRESQL_HOST variable is not defined");
-      }
+    host = getPropertyOrDefault("HDB_POSTGRESQL_HOST", host, null);
+    if (host == null)
+    {
+      throw new HdbFailed("host input parameter cannot be null if HDB_POSTGRESQL_HOST variable is not defined");
     }
 
-    if(user==null || user.isEmpty()) {
-      user = System.getenv("HDB_USER");
-      if (user==null || user.isEmpty()) {
-        user = System.getProperty("HDB_USER");
-        if (user==null || user.isEmpty())
-          user = DEFAULT_DB_USER;
-      }
-    }
+    user = getPropertyOrDefault("HDB_USER", _user, DEFAULT_DB_USER);
 
-    if(passwd==null || passwd.isEmpty()) {
-      passwd = System.getenv("HDB_PASSWORD");
-      if (passwd==null || passwd.isEmpty()) {
-        passwd = System.getProperty("HDB_PASSWORD");
-        if (passwd==null || passwd.isEmpty())
-          passwd = DEFAULT_DB_PASSWORD;
-      }
-    }
+    passwd = getPropertyOrDefault("HDB_PASSWORD", _passwd, DEFAULT_DB_PASSWORD);
 
-    if(db==null || db.isEmpty()) {
-      db = System.getenv("HDB_NAME");
-      if (db==null || db.isEmpty()) {
-        db = System.getProperty("HDB_NAME");
-        if (db==null || db.isEmpty())
-          db = DEFAULT_DB_NAME;
-      }
-    }
+    db = getPropertyOrDefault("HDB_NAME", db, DEFAULT_DB_NAME);
 
     if(port==0) {
-      String pStr = System.getenv("HDB_POSTGRESQL_PORT");
+      String pStr = getPropertyOrDefault("HDB_POSTGRESQL_PORT", null, null);
       if(pStr==null || passwd.isEmpty())
         port = DEFAULT_DB_PORT;
       else {
@@ -159,6 +133,20 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  private String getPropertyOrDefault(String property, String value, String default_value)
+  {
+    String ret = value;
+    if(ret==null || ret.isEmpty()) {
+      ret = System.getenv(property);
+      if (ret==null || ret.isEmpty()) {
+        ret = System.getProperty(property);
+        if (ret==null || ret.isEmpty())
+          ret = default_value;
+      }
+    }
+    return ret;
+  }
+  
   private void connect() throws HdbFailed {
 
     try {
@@ -179,6 +167,11 @@ public class PostgreSQLSchema extends HdbReader {
   public void disconnect () {
 
     try {
+      for(PreparedStatement statement : prepQueries.values())
+      {
+        statement.close();
+      }
+      prepQueries.clear();
       connection.close();
     } catch (SQLException e) {
       System.out.println("Warning closing connection : " + e.getMessage());
@@ -292,19 +285,30 @@ public class PostgreSQLSchema extends HdbReader {
 
     boolean isRW = sigInfo.isRW();
     boolean isWO = sigInfo.access == SignalInfo.Access.WO;
+    boolean isAggregate = sigInfo.isAggregate();
 
     String query;
     int queryCount = 0;
 
     connectionCheck();
 
+    String tablename;
+    if(isAggregate)
+    {
+      tablename = "cagg_" + sigInfo.tableName.substring(4) + "_" + sigInfo.interval.toString();
+    }
+    else
+    {
+      tablename = sigInfo.tableName;
+    }
+
     if (hasProgressListener()) {
 
       // Get a count of the request
-      query = "SELECT count(*) FROM " + sigInfo.tableName +
-          " WHERE att_conf_id='" + sigInfo.sigId + "'" +
-          " AND data_time>='" + toDBDate(start_date) + "'" +
-          " AND data_time<='" + toDBDate(stop_date) + "'";
+        query = "SELECT count(*) FROM " + tablename +
+                " WHERE att_conf_id='" + sigInfo.sigId + "'" +
+                " AND data_time>='" + toDBDate(start_date) + "'" +
+                " AND data_time<='" + toDBDate(stop_date) + "'";
 
       try {
 
@@ -316,121 +320,277 @@ public class PostgreSQLSchema extends HdbReader {
         statement.close();
 
       } catch (SQLException e) {
-        throw new HdbFailed("Failed to get data: " + e.getMessage());
+        throw new HdbFailed("Failed to get data for query: " + query + "\n" + e.getMessage());
       }
 
     }
 
     // Fetch data
+    PreparedStatement statement;
+    if(!prepQueries.containsKey(sigInfo)) {
+      if(isAggregate) {
+        switch (sigInfo.dataType) {
+          case DOUBLE:
+          case FLOAT:
+            query = "SELECT data_time, count_rows, count_errors, count_r, count_nan_r, mean_r, min_r, max_r, stddev_r" +
+                    ", count_w, count_nan_w, mean_w, min_w, max_w, stddev_w" +
+                    " FROM " + tablename +
+                    " WHERE att_conf_id= ?" +
+                    " AND data_time>= ?" +
+                    " AND data_time<= ?" +
+                    " ORDER BY data_time ASC";
+            break;
+          case LONG:
+          case ULONG:
+          case LONG64:
+          case ULONG64:
+          case SHORT:
+          case USHORT:
+            query = "SELECT data_time, count_rows, count_errors, count_r, mean_r, min_r, max_r, stddev_r" +
+                    ", count_w, mean_w, min_w, max_w, stddev_w" +
+                    " FROM " + tablename +
+                    " WHERE att_conf_id= ?" +
+                    " AND data_time>= ?" +
+                    " AND data_time<= ?" +
+                    " ORDER BY data_time ASC";
+            break;
+          default:
+            throw new HdbFailed("Aggregates are not supported for type: " + sigInfo.dataType);
+        }
+      }
+      else
+      {
+        String rwField = isRW ? ",value_w" : "";
+        query = "SELECT data_time,att_error_desc.error_desc as error_desc,quality,value_r" + rwField +
+                " FROM " + tablename +
+                " left outer join att_error_desc on " + sigInfo.tableName + ".att_error_desc_id = att_error_desc.att_error_desc_id" +
+                " WHERE att_conf_id= ?" +
+                " AND data_time>= ?" +
+                " AND data_time<= ?" +
+                " ORDER BY data_time ASC";
+      }
 
-    String rwField = isRW ? ",value_w" : "";
-    query = "SELECT data_time,att_error_desc.error_desc as error_desc,quality,value_r" + rwField +
-        " FROM " + sigInfo.tableName +
-        " left outer join att_error_desc on " + sigInfo.tableName + ".att_error_desc_id = att_error_desc.att_error_desc_id" +
-        " WHERE att_conf_id='" + sigInfo.sigId + "'" +
-        " AND data_time>='" + toDBDate(start_date) + "'" +
-        " AND data_time<='" + toDBDate(stop_date) + "'" +
-        " ORDER BY data_time ASC";
+      try {
+        prepQueries.put(sigInfo, connection.prepareStatement(query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY));
+      } catch (SQLException e) {
+        throw new HdbFailed("An error occurred upon query preparation for query: " + query);
+      }
+    }
 
-    ArrayList<HdbData> ret = new ArrayList<HdbData>();
-    ArrayList<Object> value = new ArrayList<Object>();
-    ArrayList<Object> wvalue = null;
-    if(isRW) wvalue = new ArrayList<Object>();
+    ArrayList<HdbData> ret = new ArrayList<>();
 
+
+    //retrieve prepared statement
+    statement = prepQueries.get(sigInfo);
     try {
 
-      long dTime = 0;
-      String errorMsg = null;
-      int quality = 0;
-      int nbRow = 0;
-
-      Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+      //fill the placeholders
+      statement.setInt(1, Integer.parseInt(sigInfo.sigId));
+      statement.setTimestamp(2, Timestamp.valueOf(toDBDate(start_date)));
+      statement.setTimestamp(3, Timestamp.valueOf(toDBDate(stop_date)));
+      
       if(sigInfo.isArray())
         statement.setFetchSize(arrayFetchSize);
       else
         statement.setFetchSize(fetchSize);
-      ResultSet rs = statement.executeQuery(query);
-      while (rs.next()) {
 
-        dTime = timeValue(rs.getTimestamp(1));
-        errorMsg = rs.getString(2);
-        quality = rs.getInt(3);
-        value.clear();
-        if(isRW)
-          wvalue.clear();
-        if(sigInfo.isArray())
-        {
-          if(!isWO) convertArray(value, rs.getArray(4));
-          if(isRW) convertArray(wvalue, rs.getArray(5));
-        }
-        else
-        {
-          switch(sigInfo.dataType)
-          {
-            case BOOLEAN:
-              if(!isWO) value.add(rs.getBoolean(4));
-              if(isRW) wvalue.add(rs.getBoolean(5));
-              break;
-            case SHORT:
-            case UCHAR:
-            case LONG:
-            case USHORT:
-            case STATE:
-            case LONG64:
-            case ULONG:
-              if(!isWO) value.add(rs.getLong(4));
-              if(isRW) wvalue.add(rs.getLong(5));
-              break;
-            case DOUBLE:
-              if(!isWO) value.add(rs.getDouble(4));
-              if(isRW) wvalue.add(rs.getDouble(5));
-              break;
-            case FLOAT:
-              if(!isWO) value.add(rs.getFloat(4));
-              if(isRW) wvalue.add(rs.getFloat(5));
-              break;
-            case STRING:
-              if(!isWO) value.add(rs.getString(4));
-              if(isRW) wvalue.add(rs.getString(5));
-              break;
-          }
-        }
+      //execute query
+      ResultSet rs = statement.executeQuery();
 
-        // Write only attribute, copy write data to read data
-        if(isWO) value.addAll(wvalue);
-
-        HdbData hd = HdbData.createData(sigInfo);
-
-        hd.parse(
-            dTime,     //Tango timestamp
-            0,         // Event receive timestamp
-            0,         // Recording timestamp
-            errorMsg,  // Error string
-            quality,   // Quality value
-            value, // Read value
-            wvalue // Write value
-        );
-        ret.add(hd);
-
-        if (hasProgressListener() && (nbRow % PROGRESS_NBROW == 0))
-          fireProgressListener((double) nbRow / (double) queryCount);
-
-        nbRow++;
-
+      if(isAggregate)
+      {
+        extractAggregateData(rs, sigInfo, isRW, isWO, queryCount, ret);
       }
-
-      statement.close();
+      else
+      {
+        extractRawData(rs, sigInfo, isRW, isWO, queryCount, ret);
+      }
 
     } catch (SQLException e) {
       throw new HdbFailed("Failed to get data: " + e.getMessage());
     }
 
     return new HdbDataSet(ret);
-
-
   }
 
-  public  HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
+  private void extractRawData(ResultSet rs, SignalInfo sigInfo, boolean isRW, boolean isWO, int queryCount, List<HdbData> data) throws SQLException, HdbFailed
+  {
+    long dTime = 0;
+    String errorMsg = null;
+    int quality = 0;
+    int nbRow = 0;
+
+    ArrayList<Object> value = new ArrayList<>();
+    ArrayList<Object> wvalue = new ArrayList<>();
+
+    while (rs.next()) {
+
+      dTime = timeValue(rs.getTimestamp(1));
+      errorMsg = rs.getString(2);
+      quality = rs.getInt(3);
+      value.clear();
+      if(isRW)
+        wvalue.clear();
+      if(sigInfo.isArray())
+      {
+        if(!isWO) convertArray(value, rs.getArray(4));
+        if(isRW) convertArray(wvalue, rs.getArray(5));
+      }
+      else
+      {
+        switch(sigInfo.dataType)
+        {
+          case BOOLEAN:
+            if(!isWO) value.add(rs.getBoolean(4));
+            if(isRW) wvalue.add(rs.getBoolean(5));
+            break;
+          case SHORT:
+          case UCHAR:
+          case LONG:
+          case USHORT:
+          case STATE:
+          case LONG64:
+          case ULONG:
+            if(!isWO) value.add(rs.getLong(4));
+            if(isRW) wvalue.add(rs.getLong(5));
+            break;
+          case DOUBLE:
+            if(!isWO) value.add(rs.getDouble(4));
+            if(isRW) wvalue.add(rs.getDouble(5));
+            break;
+          case FLOAT:
+            if(!isWO) value.add(rs.getFloat(4));
+            if(isRW) wvalue.add(rs.getFloat(5));
+            break;
+          case STRING:
+            if(!isWO) value.add(rs.getString(4));
+            if(isRW) wvalue.add(rs.getString(5));
+            break;
+        }
+      }
+
+      // Write only attribute, copy write data to read data
+      if(isWO) value.addAll(wvalue);
+
+      HdbData hd = HdbData.createData(sigInfo);
+
+      hd.parse(
+              dTime,     //Tango timestamp
+              0,         // Event receive timestamp
+              0,         // Recording timestamp
+              errorMsg,  // Error string
+              quality,   // Quality value
+              value, // Read value
+              wvalue // Write value
+      );
+      data.add(hd);
+
+      if (hasProgressListener() && (nbRow % PROGRESS_NBROW == 0))
+        fireProgressListener((double) nbRow / (double) queryCount);
+
+      nbRow++;
+
+    }
+  }
+
+  private void extractAggregateData(ResultSet rs, SignalInfo info, boolean isRW, boolean isWO, int queryCount, List<HdbData> data) throws SQLException, HdbFailed
+  {
+    int nbRow = 0;
+    boolean isFloating = info.dataType == HdbSigInfo.Type.DOUBLE || info.dataType == HdbSigInfo.Type.FLOAT;
+    boolean isArray = info.isArray();
+    int floatingOffset1 = 0;
+    int floatingOffset2 = 0;
+    if(!isFloating)
+    {
+      floatingOffset1 = 1;
+      floatingOffset2 = 2;
+    }
+
+    long dTime = 0;
+    long count_rows;
+    long count_errors;
+
+    while (rs.next()) {
+      ArrayList<Long> count_r = new ArrayList<>();
+      ArrayList<Long> count_nan_r = new ArrayList<>();
+      ArrayList<Double> mean_r = new ArrayList<>();
+      ArrayList<Number> min_r = new ArrayList<>();
+      ArrayList<Number> max_r = new ArrayList<>();
+      ArrayList<Double> stddev_r = new ArrayList<>();
+      ArrayList<Long> count_w = new ArrayList<>();
+      ArrayList<Long> count_nan_w = new ArrayList<>();
+      ArrayList<Double> mean_w = new ArrayList<>();
+      ArrayList<Number> min_w = new ArrayList<>();
+      ArrayList<Number> max_w = new ArrayList<>();
+      ArrayList<Double> stddev_w = new ArrayList<>();
+      dTime = timeValue(rs.getTimestamp(1));
+      count_rows = rs.getLong(2);
+      count_errors = rs.getLong(3);
+      if (isArray) {
+        convertLongArray(count_r, rs.getArray(4));
+        convertDoubleArray(mean_r, rs.getArray(6 - floatingOffset1));
+        convertNumberArray(min_r, rs.getArray(7 - floatingOffset1), info.dataType);
+        convertNumberArray(max_r, rs.getArray(8 - floatingOffset1), info.dataType);
+        convertDoubleArray(stddev_r, rs.getArray(9 - floatingOffset1));
+        convertLongArray(count_w, rs.getArray(10 - floatingOffset1));
+        convertDoubleArray(mean_w, rs.getArray(12 - floatingOffset2));
+        convertNumberArray(min_w, rs.getArray(13 - floatingOffset2), info.dataType);
+        convertNumberArray(max_w, rs.getArray(14 - floatingOffset2), info.dataType);
+        convertDoubleArray(stddev_w, rs.getArray(15 - floatingOffset2));
+        if(isFloating)
+        {
+          convertLongArray(count_nan_r, rs.getArray(5));
+          convertLongArray(count_nan_w, rs.getArray(11));
+        }
+      }
+      else
+      {
+        count_r.add(rs.getLong(4));
+        mean_r.add(rs.getDouble(6 - floatingOffset1));
+        min_r.add(extractNumber(rs, 7 - floatingOffset1, info.dataType));
+        max_r.add(extractNumber(rs, 8 - floatingOffset1, info.dataType));
+        stddev_r.add(rs.getDouble(9 - floatingOffset1));
+        count_w.add(rs.getLong(10 - floatingOffset1));
+        mean_w.add(rs.getDouble(12 - floatingOffset2));
+        min_w.add(extractNumber(rs, 13-floatingOffset2, info.dataType));
+        max_w.add(extractNumber(rs, 14-floatingOffset2, info.dataType));
+        stddev_w.add(rs.getDouble(15 - floatingOffset2));
+        if(isFloating) {
+          count_nan_r.add(rs.getLong(5));
+          count_nan_w.add(rs.getLong(11));
+        }
+      }
+
+      HdbData hd = HdbData.createData(info);
+
+      hd.parseAggregate(
+              dTime,     //Tango timestamp
+              count_rows,
+              count_errors,
+              count_r,
+              count_nan_r,
+              mean_r,
+              min_r,
+              max_r,
+              stddev_r,
+              count_w,
+              count_nan_w,
+              mean_w,
+              min_w,
+              max_w,
+              stddev_w
+      );
+
+      data.add(hd);
+
+      if (hasProgressListener() && (nbRow % PROGRESS_NBROW == 0))
+        fireProgressListener((double) nbRow / (double) queryCount);
+
+      nbRow++;
+    }
+  }
+
+  public HdbSigParam getLastParam(SignalInfo sigInfo) throws HdbFailed {
 
     connectionCheck();
 
@@ -564,6 +724,76 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  private void convertDoubleArray(ArrayList<Double> v,Array a) throws SQLException {
+
+    if(a!=null) {
+      Double[] objects = (Double[]) a.getArray();
+      for(int i=0;i<objects.length;i++) {
+        v.add(objects[i]);
+      }
+    }
+
+  }
+
+  private void convertNumberArray(ArrayList<Number> v,Array a, HdbSigInfo.Type type) throws SQLException {
+    if(a!=null) {
+      Number[] numbers;
+      switch(type) {
+        case FLOAT:
+        case DOUBLE:
+        case LONG:
+        case LONG64:
+        case SHORT:
+        case ULONG:
+        case ULONG64:
+        case USHORT:
+          numbers = (Number[]) a.getArray();
+          break;
+        default:
+          numbers = new Number[0];
+      }
+      for (int i = 0; i < numbers.length; i++) {
+        v.add(numbers[i]);
+      }
+    }
+  }
+
+  private void convertLongArray(ArrayList<Long> v,Array a) throws SQLException {
+
+    if(a!=null) {
+      Long[] objects = (Long[]) a.getArray();
+      for(int i=0;i<objects.length;i++) {
+        v.add(objects[i]);
+      }
+    }
+
+  }
+
+  private Number extractNumber(ResultSet rs, int index, HdbSigInfo.Type type) throws SQLException {
+    if(rs!=null) {
+      switch(type) {
+        case FLOAT:
+          return rs.getFloat(index);
+        case DOUBLE:
+          return rs.getDouble(index);
+        case LONG:
+          return rs.getInt(index);
+        case LONG64:
+          return rs.getLong(index);
+        case SHORT:
+          return rs.getShort(index);
+        case ULONG:
+          return rs.getLong(index);
+        case ULONG64:
+          return rs.getLong(index);
+        case USHORT:
+          return rs.getInt(index);
+        default:
+      }
+    }
+    return Double.NaN;
+  }
+
   private long timeValue(Timestamp ts) {
 
     if(ts==null)
@@ -596,11 +826,8 @@ public class PostgreSQLSchema extends HdbReader {
     }
 
     String[] ret = new String[list.size()];
-    for(int i=0;i<ret.length;i++)
-      ret[i] = list.get(i);
 
-    return ret;
-
+    return list.toArray(ret);
   }
 
   private String toDBDate(String date) {
@@ -612,4 +839,15 @@ public class PostgreSQLSchema extends HdbReader {
 
   }
 
+  @Override
+  public boolean isFeatureSupported(Feature feat)
+  {
+    switch(feat)
+    {
+      case AGGREGATES:
+        return true;
+      default:
+        return false;
+    }
+  }
 }

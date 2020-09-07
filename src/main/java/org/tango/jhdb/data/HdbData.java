@@ -37,13 +37,32 @@ import org.tango.jhdb.HdbFailed;
 import org.tango.jhdb.SignalInfo;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 
 /**
  *  HdbData base class
  */
 public abstract class HdbData {
+
+  public static enum Aggregate
+  {
+    ROWS_COUNT,
+    ERRORS_COUNT,
+    COUNT_R,
+    NAN_COUNT_R,
+    MEAN_R,
+    MIN_R,
+    MAX_R,
+    STDDEV_R,
+    COUNT_W,
+    NAN_COUNT_W,
+    MEAN_W,
+    MIN_W,
+    MAX_W,
+    STDDEV_W,
+  }
+
+  final protected static Map<Aggregate, List<Number>> EMPTY_AGGREGATE = new EnumMap<>(Aggregate.class);
 
   final static SimpleDateFormat dfr = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
@@ -199,6 +218,12 @@ public abstract class HdbData {
   public abstract long[] getWriteValueAsLongArray() throws HdbFailed;
 
   /**
+   * Returns the aggregate values.
+   * @throws HdbFailed In case of failure
+   */
+  public abstract Map<Aggregate, List<Number>> getAggregate() throws HdbFailed;
+
+  /**
    * Parse value
    * @param value Value to be parsed
    */
@@ -245,10 +270,23 @@ public abstract class HdbData {
 
     if(!hasFailed()) {
       parseValue(value_r);
-      parseWriteValue(value_w);
+      parseWriteValue(value_w.isEmpty() ? null : value_w);
     }
 
   }
+
+  public void parseAggregate(long dTime, long count_rows, long count_errors
+          , ArrayList<Long> count_r, ArrayList<Long> count_nan_r, ArrayList<Double> mean_r, ArrayList<Number> min_r, ArrayList<Number> max_r, ArrayList<Double> stddev_r
+          , ArrayList<Long> count_w, ArrayList<Long> count_nan_w, ArrayList<Double> mean_w, ArrayList<Number> min_w, ArrayList<Number> max_w, ArrayList<Double> stddev_w)
+  {
+    dataTime = dTime;
+    doParseAggregate(count_rows, count_errors, count_r, count_nan_r, mean_r, min_r, max_r, stddev_r, count_w, count_nan_w, mean_w, min_w, max_w, stddev_w);
+  }
+
+  protected abstract void doParseAggregate(long count_rows, long count_errors
+          , ArrayList<Long> count_r, ArrayList<Long> count_nan_r, ArrayList<Double> mean_r, ArrayList<Number> min_r, ArrayList<Number> max_r, ArrayList<Double> stddev_r
+          , ArrayList<Long> count_w, ArrayList<Long> count_nan_w, ArrayList<Double> mean_w, ArrayList<Number> min_w, ArrayList<Number> max_w, ArrayList<Double> stddev_w);
+
 
   /**
    * Return time representation of the give time (ex: 22/07/2015 08:12:15.718908)
@@ -294,17 +332,16 @@ public abstract class HdbData {
   abstract int dataSize();
   abstract int dataSizeW();
 
-  abstract void copyData(HdbData src);
+  abstract HdbData copyData();
 
   public HdbData copy() throws HdbFailed {
 
-    HdbData ret = HdbData.createData(info);
+    HdbData ret = copyData();
     ret.dataTime=dataTime;
     ret.recvTime=recvTime;
     ret.insertTime=insertTime;
     ret.qualityFactor=qualityFactor;
     ret.errorMessage=errorMessage;
-    ret.copyData(this);
     return ret;
 
   }
@@ -360,6 +397,7 @@ public abstract class HdbData {
    * @throws HdbFailed In case of failure
    */
   public static HdbData createData(SignalInfo info) throws HdbFailed {
+    if(info.interval == SignalInfo.Interval.NONE) {
       switch (info.dataType) {
         case DOUBLE:
           return HdbDouble.createData(info);
@@ -392,6 +430,12 @@ public abstract class HdbData {
         default:
           throw new HdbFailed("Unknown signal type=" + info.dataType + ", format=" + info.format);
       }
+    }
+    else
+    {
+      return new HdbAggregateData(info);
+    }
+
   }
 
 }

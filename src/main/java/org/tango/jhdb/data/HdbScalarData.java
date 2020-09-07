@@ -94,4 +94,16 @@ public abstract class HdbScalarData extends HdbData {
   public long[] getWriteValueAsLongArray() throws HdbFailed {
     throw new HdbFailed("This datum is not an integer");
   }
+
+  public Map<Aggregate, List<Number>> getAggregate() throws HdbFailed
+  {
+    return EMPTY_AGGREGATE;
+  }
+
+  protected void doParseAggregate(long count_rows, long count_errors
+          , ArrayList<Long> count_r, ArrayList<Long> count_nan_r, ArrayList<Double> mean_r, ArrayList<Number> min_r, ArrayList<Number> max_r, ArrayList<Double> stddev_r
+          , ArrayList<Long> count_w, ArrayList<Long> count_nan_w, ArrayList<Double> mean_w, ArrayList<Number> min_w, ArrayList<Number> max_w, ArrayList<Double> stddev_w)
+  {
+    //do nothing
+  }
 }
