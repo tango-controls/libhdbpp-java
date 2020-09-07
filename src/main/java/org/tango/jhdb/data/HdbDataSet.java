@@ -34,6 +34,7 @@ package org.tango.jhdb.data;
 
 import org.tango.jhdb.HdbFailed;
 import org.tango.jhdb.SignalInfo;
+import org.tango.jhdb.HdbSigInfo;
 
 import java.util.ArrayList;
 
@@ -73,6 +74,17 @@ public class HdbDataSet extends ArrayList<HdbData> {
    */
   public SignalInfo getSigInfo() {
     return info;
+  }
+
+  /**
+   * Get the type of this dataset
+   * @return
+   */
+  @Deprecated
+  public int getType() {
+    if(info instanceof HdbSigInfo)
+      return ((HdbSigInfo)info).type;
+    return HdbSigInfo.getType(info);
   }
 
   /**
