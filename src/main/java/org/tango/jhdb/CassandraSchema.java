@@ -539,8 +539,7 @@ public class CassandraSchema extends HdbReader {
 
     ArrayList<HdbData> ret = new ArrayList<HdbData>();
     ArrayList<Object> value = new ArrayList<Object>();
-    ArrayList<Object> wvalue = null;
-    if(isRW) wvalue = new ArrayList<Object>();
+    ArrayList<Object> wvalue = new ArrayList<Object>();
 
     for(int i=0;i<nbPeriod;i+=MAX_ASYNCH_CALL) {
 
