@@ -292,6 +292,7 @@ public class PostgreSQLSchema extends HdbReader {
 
     boolean isRW = sigInfo.isRW();
     boolean isWO = sigInfo.access == SignalInfo.Access.WO;
+    boolean isW = isRW | isWO;
 
     String query;
     int queryCount = 0;
@@ -323,7 +324,7 @@ public class PostgreSQLSchema extends HdbReader {
 
     // Fetch data
 
-    String rwField = isRW ? ",value_w" : "";
+    String rwField = isW ? ",value_w" : "";
     query = "SELECT data_time,att_error_desc.error_desc as error_desc,quality,value_r" + rwField +
         " FROM " + sigInfo.tableName +
         " left outer join att_error_desc on " + sigInfo.tableName + ".att_error_desc_id = att_error_desc.att_error_desc_id" +
@@ -334,8 +335,7 @@ public class PostgreSQLSchema extends HdbReader {
 
     ArrayList<HdbData> ret = new ArrayList<HdbData>();
     ArrayList<Object> value = new ArrayList<Object>();
-    ArrayList<Object> wvalue = null;
-    if(isRW) wvalue = new ArrayList<Object>();
+    ArrayList<Object> wvalue = new ArrayList<Object>();
 
     try {
 
@@ -356,12 +356,12 @@ public class PostgreSQLSchema extends HdbReader {
         errorMsg = rs.getString(2);
         quality = rs.getInt(3);
         value.clear();
-        if(isRW)
+        if(isW)
           wvalue.clear();
         if(sigInfo.isArray())
         {
           if(!isWO) convertArray(value, rs.getArray(4));
-          if(isRW) convertArray(wvalue, rs.getArray(5));
+          if(isW) convertArray(wvalue, rs.getArray(5));
         }
         else
         {
@@ -369,7 +369,7 @@ public class PostgreSQLSchema extends HdbReader {
           {
             case BOOLEAN:
               if(!isWO) value.add(rs.getBoolean(4));
-              if(isRW) wvalue.add(rs.getBoolean(5));
+              if(isW) wvalue.add(rs.getBoolean(5));
               break;
             case SHORT:
             case UCHAR:
@@ -379,19 +379,19 @@ public class PostgreSQLSchema extends HdbReader {
             case LONG64:
             case ULONG:
               if(!isWO) value.add(rs.getLong(4));
-              if(isRW) wvalue.add(rs.getLong(5));
+              if(isW) wvalue.add(rs.getLong(5));
               break;
             case DOUBLE:
               if(!isWO) value.add(rs.getDouble(4));
-              if(isRW) wvalue.add(rs.getDouble(5));
+              if(isW) wvalue.add(rs.getDouble(5));
               break;
             case FLOAT:
               if(!isWO) value.add(rs.getFloat(4));
-              if(isRW) wvalue.add(rs.getFloat(5));
+              if(isW) wvalue.add(rs.getFloat(5));
               break;
             case STRING:
               if(!isWO) value.add(rs.getString(4));
-              if(isRW) wvalue.add(rs.getString(5));
+              if(isW) wvalue.add(rs.getString(5));
               break;
           }
         }
