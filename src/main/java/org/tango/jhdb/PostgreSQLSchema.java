@@ -360,7 +360,7 @@ public class PostgreSQLSchema extends HdbReader {
       }
       else
       {
-        String rwField = isRW ? ",value_w" : "";
+        String rwField = (isRW | isWO) ? ",value_w" : "";
         query = "SELECT data_time,att_error_desc.error_desc as error_desc,quality,value_r" + rwField +
                 " FROM " + tablename +
                 " left outer join att_error_desc on " + sigInfo.tableName + ".att_error_desc_id = att_error_desc.att_error_desc_id" +
