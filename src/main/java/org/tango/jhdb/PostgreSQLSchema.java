@@ -423,26 +423,29 @@ public class PostgreSQLSchema extends HdbReader {
     ArrayList<Object> value = new ArrayList<>();
     ArrayList<Object> wvalue = new ArrayList<>();
 
+    boolean isW = isRW | isWO;
     while (rs.next()) {
 
       dTime = timeValue(rs.getTimestamp(1));
       errorMsg = rs.getString(2);
       quality = rs.getInt(3);
       value.clear();
-      if(isRW)
+      if(isW)
         wvalue.clear();
       if(sigInfo.isArray())
       {
-        if(!isWO) convertArray(value, rs.getArray(4));
-        if(isRW) convertArray(wvalue, rs.getArray(5));
+        if(!isWO)
+          convertArray(value, rs.getArray(4));
+        if(isW) convertArray(wvalue, rs.getArray(5));
       }
       else
       {
         switch(sigInfo.dataType)
         {
           case BOOLEAN:
-            if(!isWO) value.add(rs.getBoolean(4));
-            if(isRW) wvalue.add(rs.getBoolean(5));
+            if(!isWO)
+              value.add(rs.getBoolean(4));
+            if(isW) wvalue.add(rs.getBoolean(5));
             break;
           case SHORT:
           case UCHAR:
@@ -451,26 +454,29 @@ public class PostgreSQLSchema extends HdbReader {
           case STATE:
           case LONG64:
           case ULONG:
-            if(!isWO) value.add(rs.getLong(4));
-            if(isRW) wvalue.add(rs.getLong(5));
+            if(!isWO)
+              value.add(rs.getLong(4));
+            if(isW) wvalue.add(rs.getLong(5));
             break;
           case DOUBLE:
-            if(!isWO) value.add(rs.getDouble(4));
-            if(isRW) wvalue.add(rs.getDouble(5));
+            if(!isWO)
+              value.add(rs.getDouble(4));
+            if(isW) wvalue.add(rs.getDouble(5));
             break;
           case FLOAT:
             if(!isWO) value.add(rs.getFloat(4));
-            if(isRW) wvalue.add(rs.getFloat(5));
+            if(isW) wvalue.add(rs.getFloat(5));
             break;
           case STRING:
             if(!isWO) value.add(rs.getString(4));
-            if(isRW) wvalue.add(rs.getString(5));
+            if(isW) wvalue.add(rs.getString(5));
             break;
         }
       }
 
       // Write only attribute, copy write data to read data
-      if(isWO) value.addAll(wvalue);
+      if(isWO)
+        value.addAll(wvalue);
 
       HdbData hd = HdbData.createData(sigInfo);
 
