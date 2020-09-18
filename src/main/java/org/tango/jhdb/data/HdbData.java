@@ -245,7 +245,9 @@ public abstract class HdbData {
 
     if(!hasFailed()) {
       parseValue(value_r);
-      parseWriteValue(value_w);
+      
+      if(value_w != null && !value_w.isEmpty())
+        parseWriteValue(value_w);
     }
 
   }
