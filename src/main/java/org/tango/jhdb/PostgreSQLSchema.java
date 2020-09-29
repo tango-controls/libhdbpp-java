@@ -185,6 +185,13 @@ public class PostgreSQLSchema extends HdbReader {
     }
 
   }
+  
+  private void reconnect() throws HdbFailed
+  {
+    disconnect();
+    connection = null;
+    connect();
+  }
 
   public String getInfo() throws HdbFailed {
 
@@ -202,8 +209,7 @@ public class PostgreSQLSchema extends HdbReader {
       connection.createStatement(ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY).execute("select 1;");
     } catch (SQLException e) {
       System.out.println("Reconnecting to "  + this.dbURL);
-      disconnect();
-      connect();
+      reconnect();
     }
 
   }
@@ -317,6 +323,7 @@ public class PostgreSQLSchema extends HdbReader {
         statement.close();
 
       } catch (SQLException e) {
+        reconnect();
         throw new HdbFailed("Failed to get data: " + e.getMessage());
       }
 
@@ -422,6 +429,7 @@ public class PostgreSQLSchema extends HdbReader {
       statement.close();
 
     } catch (SQLException e) {
+      reconnect();
       throw new HdbFailed("Failed to get data: " + e.getMessage());
     }
 
