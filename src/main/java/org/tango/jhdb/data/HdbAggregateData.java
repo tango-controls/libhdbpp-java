@@ -302,8 +302,25 @@ public class HdbAggregateData extends HdbData {
     return ret;
   }
 
+  private void applyConversionFactor(ArrayList arr,double f) {
+    for(int i=0;i<arr.size();i++) {
+      if(arr.get(i) instanceof Double)
+        arr.set(i,(Double)arr.get(i)*f);
+      else if(arr.get(i) instanceof Float)
+        arr.set(i,(Float)arr.get(i)*f);
+    }
+  }
+
   public void applyConversionFactor(double f)
   {
+    applyConversionFactor(agg.mean_r,f);
+    applyConversionFactor(agg.min_r,f);
+    applyConversionFactor(agg.max_r,f);
+    applyConversionFactor(agg.stddev_r,f);
+    applyConversionFactor(agg.mean_w,f);
+    applyConversionFactor(agg.min_w,f);
+    applyConversionFactor(agg.max_w,f);
+    applyConversionFactor(agg.stddev_w,f);
   }
 
   public Map<Aggregate, List<Number>> getAggregate() throws HdbFailed
